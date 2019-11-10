@@ -24,6 +24,10 @@ use pocketmine\network\mcpe\protocol\LoginPacket;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\event\server\DataPacketReceiveEvent;
 use pocketmine\event\server\DataPacketSendEvent;
+use function array_push;
+use function array_search;
+use function array_splice;
+use function in_array;
 
 class PacketManager {
     /** @var ProtocolVersion[] */
@@ -45,6 +49,7 @@ class PacketManager {
         }
 
         $this->registered[$pv->getProtocol()] = $pv;
+
         return true;
     }
 
@@ -54,6 +59,7 @@ class PacketManager {
         }
 
         unset($this->registered[$pv->getProtocol()]);
+
         return true;
     }
 
@@ -67,8 +73,7 @@ class PacketManager {
                 $oldProto = $this->oldplayers[$packet->username];
                 $this->plugin->getLogger()->debug("§eUser: {$packet->username} [attempting to hack login for protocol: {$oldProto}]");
                 $pc = $this->registered[$oldProto];
-                $pc->translateLogin($packet); // Hoping this works?
-                //unset($this->loginCache[$packet->username]); // dont know what this is for since this field doesn't exist
+                $pc->translateLogin($packet);
                 array_splice($this->queue[$packet->username], array_search($nId, $this->queue[$packet->username]));
                 return;
             }
@@ -116,7 +121,7 @@ class PacketManager {
             $protocol = $this->oldplayers[$player->getName()];
             $protocol = $this->registered[$protocol];
             $pkN = $protocol->getPacketName($nId);
-            $protocol->changePacket($pkN, $packet, 'RECIEVE');
+            $protocol->changePacket($pkN, $packet, 'RECEIVE');
             $this->handleOldReceived($packet, $player);
             $event->setCancelled();
         }
@@ -126,7 +131,10 @@ class PacketManager {
         $packet = $event->getPacket();
         $player = $event->getPlayer();
         $nId = $packet::NETWORK_ID;
-        if (!isset($this->oldplayers[$player->getName()])) return;
+        if (!isset($this->oldplayers[$player->getName()])) {
+            return;
+        }
+
         if (isset($this->queue[$player->getName()]) and in_array($nId, $this->queue[$player->getName()])) {
             array_splice($this->queue[$player->getName()], array_search($nId, $this->queue[$player->getName()]));
         } else {
@@ -134,12 +142,17 @@ class PacketManager {
                 $this->queue[$player->getName()] = [];
             }
 
+            if (!isset($this->oldplayers[$player->getName()])) {
+                return;
+            }
+
             $protocol = $this->oldplayers[$player->getName()];
             $protocol = $this->registered[$protocol];
             $pkN = $protocol->getPacketName($nId);
             $success = $protocol->changePacket($pkN, $packet, 'SENT');
-            if (!$success) {
+            if ($success === null) {
                 $this->plugin->getLogger()->critical("Tried to send an unknown packet[$nId] to player: {$player->getName()}");
+
                 return;
             }
 

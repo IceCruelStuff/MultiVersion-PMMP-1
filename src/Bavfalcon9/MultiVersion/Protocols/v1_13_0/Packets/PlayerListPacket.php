@@ -16,15 +16,18 @@ declare(strict_types=1);
 
 namespace Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets;
 
+use Bavfalcon9\MultiVersion\Protocols\CustomTranslator;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Entity\Skin;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Entity\SkinAnimation;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Entity\SerializedImage;
+use pocketmine\network\mcpe\NetworkSession;
+use pocketmine\network\mcpe\protocol\DataPacket;
 use pocketmine\network\mcpe\protocol\types\PlayerListEntry;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\PlayerListPacket as PMListPacket;
 use function count;
 
-class PlayerListPacket extends PMListPacket{
+class PlayerListPacket extends DataPacket implements CustomTranslator{
 
     public const NETWORK_ID = ProtocolInfo::PLAYER_LIST_PACKET;
     public const TYPE_ADD = 0;
@@ -34,8 +37,6 @@ class PlayerListPacket extends PMListPacket{
     public $entries = [];
     /** @var int */
     public $type;
-
-    public $customTranslation = true; // MUTLIVERSION
 
     public function clean(){
         $this->entries = [];
@@ -144,12 +145,42 @@ class PlayerListPacket extends PMListPacket{
         return new SerializedImage($width, $height, $data);
     }
 
-    public function translateCustomPacket($packet){
-        $this->type = $packet->type;
-        foreach($packet->entries as $entry){
-            $entry->skin = Skin::null();
-        };
+    public function handle(NetworkSession $session) : bool{
+        return $session->handlePlayerSkin($this);
+    }
 
+    /**
+     * @param PMListPacket $packet
+     *
+     * @return $this
+     */
+    public function translateCustomPacket(&$packet){
+        $this->type = $packet->type;
+        foreach($packet->entries as $key=>$entry){
+            if ($entry->username === NULL) {
+                unset($packet->entries[$key]); // prevents client crashing
+                continue;
+            }
+            if (!isset($entry->skin->capeId)) $packet->entries[$key]->skin = $this->convertOldToNewSkin($entry->skin);
+        };
         return $this;
+    }
+
+    private function convertOldToNewSkin($skin) {
+        if (!$skin) return Skin::null();
+        $skinId = $skin->getSkinId();
+        $skinData = SerializedImage::fromLegacy($skin->getSkinData());
+        $capeData = SerializedImage::fromLegacy($skin->getCapeData());
+        $geometryData = $skin->getGeometryData();
+        $geometryName = $skin->getGeometryName();
+        return new Skin(
+            $skinId,
+            'MultiVersion_v1.0.0',
+            $skinData,
+            [],
+            $capeData,
+            $geometryData,
+            ''
+        );
     }
 }
