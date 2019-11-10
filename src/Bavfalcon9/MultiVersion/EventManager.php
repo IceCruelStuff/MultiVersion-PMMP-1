@@ -22,6 +22,7 @@ use pocketmine\event\Listener;
 use pocketmine\utils\MainLogger;
 use pocketmine\event\server\DataPacketReceiveEvent;
 use pocketmine\event\server\DataPacketSendEvent;
+use function define;
 
 class EventManager implements Listener {
     private $plugin;
@@ -54,6 +55,9 @@ class EventManager implements Listener {
                 "PlayerSkinPacket" => 0x5d,
                 "UpdateBlockPacket" => 0x15
             ]);
+            $newVersion->setListeners([
+                'UpdateBlockMaps'
+            ]);
             $newVersion = $this->packetManager->registerProtocol($newVersion);
             define('MULTIVERSION_v1_13_0', $this->plugin->getDataFolder().'v1_13_0');
             if (!$newVersion) {
@@ -77,8 +81,11 @@ class EventManager implements Listener {
             ]);
             $newVersion = $this->packetManager->registerProtocol($newVersion);
             define('MULTIVERSION_v1_12_0', $this->plugin->getDataFolder().'v1_12_0');
-            if (!$newVersion) MainLogger::getLogger()->critical("[MULTIVERSION]: Failed to add version: 1.12.x");
-            else MainLogger::getLogger()->info("§aLoaded support for: 1.12.x");
+            if (!$newVersion) {
+                MainLogger::getLogger()->critical("[MULTIVERSION]: Failed to add version: 1.12.x");
+            } else {
+                MainLogger::getLogger()->info("§aLoaded support for: 1.12.x");
+            }
         }
     }
 

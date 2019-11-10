@@ -19,6 +19,8 @@ namespace Bavfalcon9\MultiVersion;
 use pocketmine\plugin\PluginBase;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use Bavfalcon9\MultiVersion\Utils\ProtocolVersion;
+use function define;
+use function scandir;
 
 class Main extends PluginBase {
     public $EventManager;
@@ -30,7 +32,7 @@ class Main extends PluginBase {
             $this->getLogger()->critical("Server version:". $this->server_version . "not supported by multiversion.");
             $this->getServer()->getPluginManager()->disablePlugin($this);
         }
-
+        define('MultiVersionFile', $this->getFile());
         $this->EventManager = new EventManager($this);
         $this->getServer()->getPluginManager()->registerEvents($this->EventManager, $this);
         $this->saveAllResources();
