@@ -20,7 +20,7 @@ use pocketmine\network\mcpe\protocol\DataPacket;
 use pocketmine\utils\MainLogger;
 
 class ProtocolVersion {
-    public const DEVELOPER = true; // set to true for debug
+    public const DEVELOPER = false; // set to true for debug
     public const VERSIONS = [
         '1.12.0' => 361,
         '1.13.0' => 388
