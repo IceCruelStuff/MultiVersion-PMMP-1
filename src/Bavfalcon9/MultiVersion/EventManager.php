@@ -56,7 +56,8 @@ class EventManager implements Listener {
                 "UpdateBlockPacket" => 0x15
             ]);
             $newVersion->setListeners([
-                'UpdateBlockMaps'
+                'UpdateBlockMaps',
+                'LevelEventListener'
             ]);
             $newVersion = $this->packetManager->registerProtocol($newVersion);
             define('MULTIVERSION_v1_13_0', $this->plugin->getDataFolder().'v1_13_0');
