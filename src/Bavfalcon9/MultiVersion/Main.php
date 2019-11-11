@@ -23,18 +23,14 @@ use function define;
 use function scandir;
 
 class Main extends PluginBase {
-    public $EventManager;
-    public $server_version;
 
     public function onEnable() {
-        $this->server_version = ProtocolInfo::MINECRAFT_VERSION_NETWORK;
-        if (!isset(ProtocolVersion::VERSIONS[$this->server_version])) {
-            $this->getLogger()->critical("Server version:". $this->server_version . "not supported by multiversion.");
+        if (!isset(ProtocolVersion::VERSIONS[ProtocolInfo::MINECRAFT_VERSION_NETWORK])) {
+            $this->getLogger()->critical("Server version:". ProtocolInfo::MINECRAFT_VERSION_NETWORK . "not supported by multiversion.");
             $this->getServer()->getPluginManager()->disablePlugin($this);
         }
         define('MultiVersionFile', $this->getFile());
-        $this->EventManager = new EventManager($this);
-        $this->getServer()->getPluginManager()->registerEvents($this->EventManager, $this);
+        $this->getServer()->getPluginManager()->registerEvents(new EventManager($this), $this);
         $this->saveAllResources();
     }
 

@@ -19,6 +19,7 @@ namespace Bavfalcon9\MultiVersion;
 use Bavfalcon9\MultiVersion\Utils\PacketManager;
 use Bavfalcon9\MultiVersion\Utils\ProtocolVersion;
 use pocketmine\event\Listener;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\utils\MainLogger;
 use pocketmine\event\server\DataPacketReceiveEvent;
 use pocketmine\event\server\DataPacketSendEvent;
@@ -45,7 +46,7 @@ class EventManager implements Listener {
     }
 
     private function loadMultiVersion() {
-        if ($this->plugin->server_version === '1.12.0') {
+        if (ProtocolInfo::MINECRAFT_VERSION_NETWORK === '1.12.0') {
             // 1.13 support on MCPE 1.12
             $newVersion = new ProtocolVersion(ProtocolVersion::VERSIONS['1.13.0'], '1.13.0', false);
             $newVersion->setProtocolPackets([
@@ -68,7 +69,7 @@ class EventManager implements Listener {
             }
         }
 
-        if ($this->plugin->server_version === '1.13.0') {
+        if (ProtocolInfo::MINECRAFT_VERSION_NETWORK === '1.13.0') {
             // 1.12 support on MCPE 1.13
             $newVersion = new ProtocolVersion(ProtocolVersion::VERSIONS['1.12.0'], '1.12.0', false);
             $newVersion->setProtocolPackets([
