@@ -89,7 +89,7 @@ class PlayerListPacket extends DataPacket implements CustomTranslator{
         }
     }
 
-    private function getSkin() : Skin{
+    public function getSkin() : Skin{
         $skinId = $this->getString();
         $skinResourcePatch = $this->getString();
         $skinData = $this->getImage();
@@ -111,7 +111,7 @@ class PlayerListPacket extends DataPacket implements CustomTranslator{
         return new Skin($skinId, $skinResourcePatch, $skinData, $animations, $capeData, $geometryData, $animationData, $premium, $persona, $capeOnClassic, $capeId);
     }
 
-    private function putSkin(Skin $skin) : void{
+    public function putSkin(Skin $skin) : void{
         $this->putString($skin->getSkinId());
         $this->putString($skin->getSkinResourcePatch());
         $this->putImage($skin->getSkinData());
@@ -166,7 +166,11 @@ class PlayerListPacket extends DataPacket implements CustomTranslator{
         return $this;
     }
 
-    private function convertOldToNewSkin($skin) {
+    public function convertOldToNewSkin($skin) {
+        return self::convertFromLegacySkin($skin);
+    }
+
+    public static function convertFromLegacySkin($skin) {
         if (!$skin) return Skin::null();
         $skinId = $skin->getSkinId();
         $skinData = SerializedImage::fromLegacy($skin->getSkinData());

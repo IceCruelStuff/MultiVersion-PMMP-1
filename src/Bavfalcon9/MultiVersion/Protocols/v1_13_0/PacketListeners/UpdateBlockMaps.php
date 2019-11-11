@@ -11,8 +11,6 @@
  *
  */
 
-// see https://github.com/Olybear9/MultiVersion-PMMP/wiki/Packet-Listeners
-
 declare(strict_types=1);
 
 namespace Bavfalcon9\MultiVersion\Protocols\v1_13_0\PacketListeners;

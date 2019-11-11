@@ -58,7 +58,8 @@ class EventManager implements Listener {
             ]);
             $newVersion->setListeners([
                 'UpdateBlockMaps',
-                'LevelEventListener'
+                'LevelEventListener',
+                'PlayerSkinListener'
             ]);
             $newVersion = $this->packetManager->registerProtocol($newVersion);
             define('MULTIVERSION_v1_13_0', $this->plugin->getDataFolder().'v1_13_0');
