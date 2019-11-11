@@ -24,11 +24,14 @@ class LevelEventListener extends PacketListener{
      *
      * @return bool
      */
-    public function onPacketCheck(&$packet): Bool {
-        foreach($packet->getPackets() as $buf){
+    public function onPacketCheck(&$packet): Bool{
+        foreach ($packet->getPackets() as $buf) {
             $pk = PacketPool::getPacket($buf);
-            if($pk instanceof LevelEventPacket and $pk->evid === LevelEventPacket::EVENT_PARTICLE_DESTROY){
-                return true;
+            if ($pk instanceof LevelEventPacket) {
+                $pk = $this->decodeLevelEventPacketPayload($pk);
+                if ($pk->evid === LevelEventPacket::EVENT_PARTICLE_DESTROY) {
+                    return true;
+                }
             }
         }
 
@@ -41,25 +44,25 @@ class LevelEventListener extends PacketListener{
      * @return void
      */
     public function onPacketMatch(&$packet) : Void {
-        foreach($packet->getPackets() as $buf){
+        foreach($packet->getPackets() as $buf) {
             $pk = PacketPool::getPacket($buf);
-            if($pk instanceof LevelEventPacket and $pk->evid === LevelEventPacket::EVENT_PARTICLE_DESTROY){
-                $pk = $this->decodeUpdateBlockPacketPayload($pk);
+            if ($pk instanceof LevelEventPacket) {
+                $pk = $this->decodeLevelEventPacketPayload($pk);
+                if ($pk->evid === LevelEventPacket::EVENT_PARTICLE_DESTROY) {
+                    list($id, $meta) = PMRuntimeBlockMapping::fromStaticRuntimeId($pk->data);
+                    $pk->data = RuntimeBlockMapping::toStaticRuntimeId($id, $meta);
 
-                list($id, $meta) = PMRuntimeBlockMapping::fromStaticRuntimeId($pk->data);
-                $pk->data = RuntimeBlockMapping::toStaticRuntimeId($id, $meta);
-
-                $pk = $this->encodeUpdateBlockPacketPayload($pk);
-
-                $newPayload = str_replace(strlen($buf) . $buf, $pk->buffer, $packet->payload);
-                $packet->setBuffer($newPayload, $packet->offset);
+                    $pk = $this->encodeLevelEventPacketPayload($pk);
+                    $newPayload = str_replace(strlen($buf) . $buf, $pk->buffer, $packet->payload);
+                    $packet->setBuffer($newPayload, $packet->offset);
+                }
             }
         }
 
         return;
     }
 
-    private function encodeUpdateBlockPacketPayload(LevelEventPacket $packet){
+    private function encodeLevelEventPacketPayload(LevelEventPacket $packet){
         $packet->putVarInt($packet->evid);
         $packet->putVector3Nullable($packet->position);
         $packet->putVarInt($packet->data);
@@ -67,7 +70,7 @@ class LevelEventListener extends PacketListener{
         return $packet;
     }
 
-    private function decodeUpdateBlockPacketPayload(LevelEventPacket $packet){
+    private function decodeLevelEventPacketPayload(LevelEventPacket $packet){
         $packet->evid = $packet->getVarInt();
         $packet->position = $packet->getVector3();
         $packet->data = $packet->getVarInt();
