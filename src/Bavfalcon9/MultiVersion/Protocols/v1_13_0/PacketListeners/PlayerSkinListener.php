@@ -1,4 +1,5 @@
 <?php
+
 /**
  *    ___  ___      _ _   _ _   _               _
  *    |  \/  |     | | | (_) | | |             (_)
@@ -11,23 +12,32 @@
  *
  */
 
+declare(strict_types=1);
+
 namespace Bavfalcon9\MultiVersion\Protocols\v1_13_0\PacketListeners;
 
-use Bavfalcon9\MultiVersion\Protocols\v1_13_0\types\RuntimeBlockMapping;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Entity\Skin;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Entity\SkinAnimation;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Entity\SerializedImage;
+use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets\PlayerListPacket;
 use Bavfalcon9\MultiVersion\Utils\PacketListener;
 use pocketmine\network\mcpe\protocol\BatchPacket;
 use pocketmine\network\mcpe\protocol\PacketPool;
 use pocketmine\network\mcpe\protocol\types\PlayerListEntry;
 use pocketmine\network\mcpe\protocol\PlayerListPacket as PMPlayerList;
+use pocketmine\utils\Binary;
+use function strlen;
 
 class PlayerSkinListener extends PacketListener {
     public function __construct() {
         parent::__construct('BatchPacket', BatchPacket::NETWORK_ID);
     }
 
+    /**
+     * @param BatchPacket $packet
+     *
+     * @return bool
+     */
     public function onPacketCheck(&$packet): Bool {
         foreach($packet->getPackets() as $buf){
             $pk = PacketPool::getPacket($buf);
@@ -38,22 +48,32 @@ class PlayerSkinListener extends PacketListener {
         return false;
     }
 
+    /**
+     * @param BatchPacket $packet
+     *
+     * @return Void
+     */
     public function onPacketMatch(&$packet): Void {
         foreach($packet->getPackets() as $buf){
             $pk = PacketPool::getPacket($buf);
             if($pk instanceof PMPlayerList){
-                $newPacket = new \Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets\PlayerListPacket();
+                $newPacket = new PlayerListPacket;
 
                 $pk = $this->decodePacketPayload($pk);
                 $pk = $newPacket->translateCustomPacket($pk);
                 $pk = $this->encodePacketPayload($pk);
 
-                $newPayload = str_replace(strlen($buf) . $buf, $pk->buffer, $packet->payload);
+                $newPayload = str_replace(Binary::writeUnsignedVarInt(strlen($buf)) . $buf, $pk->buffer, $packet->payload);
                 $packet->setBuffer($newPayload, $packet->offset);
             }
         }
     }
 
+    /**
+     * @param PlayerListPacket $packet
+     *
+     * @return PlayerListPacket
+     */
     private function encodePacketPayload($packet) {
         $packet->putByte($packet->type);
         $packet->putUnsignedVarInt(count($packet->entries));
@@ -102,6 +122,11 @@ class PlayerSkinListener extends PacketListener {
         return $packet;
     }
 
+    /**
+     * @param PMPlayerList $packet
+     *
+     * @return PMPlayerList
+     */
     private function decodePacketPayload($packet) {
         $packet->type = $packet->getByte();
         $count = $packet->getUnsignedVarInt();
