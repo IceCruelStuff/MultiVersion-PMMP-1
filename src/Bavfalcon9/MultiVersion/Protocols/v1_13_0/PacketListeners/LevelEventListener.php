@@ -1,4 +1,5 @@
 <?php
+
 /**
  *    ___  ___      _ _   _ _   _               _
  *    |  \/  |     | | | (_) | | |             (_)
@@ -10,8 +11,11 @@
  * Copyright (C) 2019 Olybear9 (Bavfalcon9)
  *
  */
+
 declare(strict_types=1);
+
 namespace Bavfalcon9\MultiVersion\Protocols\v1_13_0\PacketListeners;
+
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\types\RuntimeBlockMapping;
 use Bavfalcon9\MultiVersion\Utils\PacketListener;
 use pocketmine\network\mcpe\protocol\BatchPacket;

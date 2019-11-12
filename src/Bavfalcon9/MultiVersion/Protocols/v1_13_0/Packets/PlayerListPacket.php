@@ -155,7 +155,7 @@ class PlayerListPacket extends DataPacket implements CustomTranslator{
      *
      * @return $this
      */
-    public function translateCustomPacket(&$packet){
+    public function translateCustomPacket($packet){
         $this->type = $packet->type;
         foreach($packet->entries as $key => $entry){
             if ($entry->username === null) {
@@ -164,16 +164,12 @@ class PlayerListPacket extends DataPacket implements CustomTranslator{
                 continue;
             }
 
-            if (!isset($entry->skin->capeId)) {
-                $entry->skin = $this->convertOldToNewSkin($entry->skin);
+            if ($entry->skin instanceof PMSkin) {
+                $entry->skin = self::convertFromLegacySkin($entry->skin);
             }
         }
 
         return $this;
-    }
-
-    public function convertOldToNewSkin($skin) {
-        return self::convertFromLegacySkin($skin);
     }
 
     /**
@@ -181,8 +177,7 @@ class PlayerListPacket extends DataPacket implements CustomTranslator{
      *
      * @return Skin
      */
-    public static function convertFromLegacySkin($skin) : Skin{
-        if (!$skin) return Skin::null();
+    public static function convertFromLegacySkin(PMSkin $skin) : Skin{
         $skinId = $skin->getSkinId();
         $skinData = SerializedImage::fromLegacy($skin->getSkinData());
         $capeData = SerializedImage::fromLegacy($skin->getCapeData());
