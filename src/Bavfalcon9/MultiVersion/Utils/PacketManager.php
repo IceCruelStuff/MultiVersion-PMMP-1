@@ -71,14 +71,11 @@ class PacketManager {
             $protocol = $packet->protocol;
             if (isset($this->queue[$packet->username]) and in_array($nId, $this->queue[$packet->username])) {
                 $oldProto = $this->oldplayers[$packet->username];
-                $this->plugin->getLogger()->debug("§eUser: {$packet->username} [attempting to hack login for protocol: {$oldProto}]");
+                $this->plugin->getLogger()->debug("§eUser: {$packet->username} [attempting to hack login for protocol: $oldProto]");
                 $pc = $this->registered[$oldProto];
                 $pc->translateLogin($packet);
                 array_splice($this->queue[$packet->username], array_search($nId, $this->queue[$packet->username]));
-                return;
-            }
-
-            if ($protocol !== ProtocolInfo::CURRENT_PROTOCOL) {
+            }elseif ($protocol !== ProtocolInfo::CURRENT_PROTOCOL) {
                 if (!isset($this->registered[$protocol])) {
                     if (isset($this->queue[$packet->username])) {
                         unset($this->queue[$packet->username]);
@@ -87,7 +84,6 @@ class PacketManager {
                     $this->plugin->getLogger()->critical("{$packet->username} tried to join with protocol: $protocol");
                     $player->close('', '§c[MultiVersion]: Your game version is not yet supported here. [$protocol]');
                     $event->setCancelled();
-                    return;
                 } else {
                     $this->plugin->getLogger()->debug("§e {$packet->username} joining with protocol: $protocol");
                     $this->oldplayers[$packet->username] = $protocol;
@@ -95,15 +91,14 @@ class PacketManager {
                     array_push($this->queue[$packet->username], $nId);
                     $pc = $this->registered[$protocol];
                     $pkN = $pc->getPacketName($nId);
-                    $pc->changePacket($pkN, $packet, 'RECIEVE');
+                    $pc->changePacket($pkN, $packet, 'RECEIVE');
 
                     $this->handleOldReceived($packet, $player);
                     $event->setCancelled();
-                    return;
                 }
-            } else {
-                return;
             }
+
+            return;
         }
 
         if (!isset($this->oldplayers[$player->getName()])) {

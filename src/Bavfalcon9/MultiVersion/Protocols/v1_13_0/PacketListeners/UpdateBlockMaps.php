@@ -18,7 +18,7 @@ namespace Bavfalcon9\MultiVersion\Protocols\v1_13_0\PacketListeners;
 
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\types\RuntimeBlockMapping;
 use pocketmine\network\mcpe\protocol\types\RuntimeBlockMapping as PMRuntimeBlockMapping;
-use pocketmine\network\mcpe\protocol\UpdateBlockPacket as PMUpdateBlock;
+use pocketmine\network\mcpe\protocol\UpdateBlockPacket;
 use Bavfalcon9\MultiVersion\Utils\PacketListener;
 use pocketmine\network\mcpe\protocol\BatchPacket;
 use pocketmine\network\mcpe\protocol\PacketPool;
@@ -37,7 +37,7 @@ class UpdateBlockMaps extends PacketListener{
     public function onPacketCheck(&$packet) : Bool{
         foreach ($packet->getPackets() as $buf) {
             $pk = PacketPool::getPacket($buf);
-            if ($pk instanceof PMUpdateBlock) {
+            if ($pk instanceof UpdateBlockPacket) {
                 return true;
             }
         }
@@ -55,7 +55,7 @@ class UpdateBlockMaps extends PacketListener{
         foreach ($packet->getPackets() as $buf) {
             $pk = PacketPool::getPacket($buf);
             $pk->decode();
-            if ($pk instanceof PMUpdateBlock) {
+            if ($pk instanceof UpdateBlockPacket) {
                 list($id, $meta) = PMRuntimeBlockMapping::fromStaticRuntimeId($pk->blockRuntimeId);
                 $pk->blockRuntimeId = RuntimeBlockMapping::toStaticRuntimeId($id, $meta);
             }
