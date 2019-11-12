@@ -22,13 +22,10 @@ use pocketmine\network\mcpe\protocol\UpdateBlockPacket as PMUpdateBlock;
 use Bavfalcon9\MultiVersion\Utils\PacketListener;
 use pocketmine\network\mcpe\protocol\BatchPacket;
 use pocketmine\network\mcpe\protocol\PacketPool;
-use pocketmine\utils\Binary;
-use function str_replace;
-use function strlen;
 
-class UpdateBlockMaps extends PacketListener {
+class UpdateBlockMaps extends PacketListener{
 
-    public function __construct() {
+    public function __construct(){
         parent::__construct('BatchPacket', BatchPacket::NETWORK_ID);
     }
 
@@ -37,10 +34,10 @@ class UpdateBlockMaps extends PacketListener {
      *
      * @return bool
      */
-    public function onPacketCheck(&$packet): Bool {
-        foreach($packet->getPackets() as $buf){
+    public function onPacketCheck(&$packet) : Bool{
+        foreach ($packet->getPackets() as $buf) {
             $pk = PacketPool::getPacket($buf);
-            if($pk instanceof PMUpdateBlock){
+            if ($pk instanceof PMUpdateBlock) {
                 return true;
             }
         }
@@ -54,19 +51,20 @@ class UpdateBlockMaps extends PacketListener {
      * @return void
      */
     public function onPacketMatch(&$packet) : Void {
-        foreach($packet->getPackets() as $buf){
+        $newBatch = new BatchPacket();
+        foreach ($packet->getPackets() as $buf) {
             $pk = PacketPool::getPacket($buf);
-            if($pk instanceof PMUpdateBlock){
-                $pk->decode();
+            $pk->decode();
+            if ($pk instanceof PMUpdateBlock) {
                 list($id, $meta) = PMRuntimeBlockMapping::fromStaticRuntimeId($pk->blockRuntimeId);
                 $pk->blockRuntimeId = RuntimeBlockMapping::toStaticRuntimeId($id, $meta);
-                $pk->encode();
-
-                $newPayload = str_replace(Binary::writeUnsignedVarInt(strlen($buf)) . $buf, $pk->buffer, $packet->payload);
-                $packet->setBuffer($newPayload, $packet->offset);
             }
+
+            $pk->encode();
+
+            $newBatch->addPacket($pk);
         }
 
-        return;
+        $packet = $newBatch;
     }
 }

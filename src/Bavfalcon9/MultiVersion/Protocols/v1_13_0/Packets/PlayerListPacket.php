@@ -20,6 +20,7 @@ use Bavfalcon9\MultiVersion\Protocols\CustomTranslator;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Entity\Skin;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Entity\SkinAnimation;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Entity\SerializedImage;
+use pocketmine\entity\Skin as PMSkin;
 use pocketmine\network\mcpe\NetworkSession;
 use pocketmine\network\mcpe\protocol\DataPacket;
 use pocketmine\network\mcpe\protocol\types\PlayerListEntry;
@@ -156,13 +157,18 @@ class PlayerListPacket extends DataPacket implements CustomTranslator{
      */
     public function translateCustomPacket(&$packet){
         $this->type = $packet->type;
-        foreach($packet->entries as $key=>$entry){
-            if ($entry->username === NULL) {
+        foreach($packet->entries as $key => $entry){
+            if ($entry->username === null) {
                 unset($packet->entries[$key]); // prevents client crashing
+
                 continue;
             }
-            if (!isset($entry->skin->capeId)) $packet->entries[$key]->skin = $this->convertOldToNewSkin($entry->skin);
-        };
+
+            if (!isset($entry->skin->capeId)) {
+                $entry->skin = $this->convertOldToNewSkin($entry->skin);
+            }
+        }
+
         return $this;
     }
 
@@ -170,21 +176,26 @@ class PlayerListPacket extends DataPacket implements CustomTranslator{
         return self::convertFromLegacySkin($skin);
     }
 
-    public static function convertFromLegacySkin($skin) {
+    /**
+     * @param PMSkin $skin
+     *
+     * @return Skin
+     */
+    public static function convertFromLegacySkin($skin) : Skin{
         if (!$skin) return Skin::null();
         $skinId = $skin->getSkinId();
         $skinData = SerializedImage::fromLegacy($skin->getSkinData());
         $capeData = SerializedImage::fromLegacy($skin->getCapeData());
         $geometryData = $skin->getGeometryData();
         $geometryName = $skin->getGeometryName();
+
         return new Skin(
             $skinId,
             'MultiVersion_v1.0.0',
             $skinData,
             [],
             $capeData,
-            $geometryData,
-            ''
+            $geometryData
         );
     }
 }

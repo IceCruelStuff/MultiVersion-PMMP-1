@@ -58,7 +58,6 @@ class EventManager implements Listener {
             ]);
             $newVersion->setListeners([
                 'UpdateBlockMaps',
-                'LevelEventListener',
                 'PlayerSkinListener'
             ]);
             $newVersion = $this->packetManager->registerProtocol($newVersion);
@@ -91,5 +90,4 @@ class EventManager implements Listener {
             }
         }
     }
-
 }
