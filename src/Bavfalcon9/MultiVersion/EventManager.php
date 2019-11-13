@@ -26,26 +26,41 @@ use pocketmine\event\server\DataPacketSendEvent;
 use function define;
 
 class EventManager implements Listener {
+    /** @var Main */
     private $plugin;
+    /** @var PacketManager */
     private $packetManager;
 
+    /**
+     * EventManager constructor.
+     *
+     * @param Main $pl
+     */
     public function __construct(Main $pl) {
         $this->plugin = $pl;
         $this->packetManager = new PacketManager($pl);
         $this->loadMultiVersion();
     }
 
-    public function onReceive(DataPacketReceiveEvent $event) {
+    /**
+     * @param DataPacketReceiveEvent $event
+     *
+     * @return void
+     */
+    public function onReceive(DataPacketReceiveEvent $event): void {
         $this->packetManager->handlePacketReceive($event);
-        return;
     }
 
-    public function onSend(DataPacketSendEvent $event) {
+    /**
+     * @param DataPacketSendEvent $event
+     *
+     * @return void
+     */
+    public function onSend(DataPacketSendEvent $event): void {
         $this->packetManager->handlePacketSent($event);
-        return;
     }
 
-    private function loadMultiVersion() {
+    private function loadMultiVersion(): void {
         if (ProtocolInfo::MINECRAFT_VERSION_NETWORK === '1.12.0') {
             // 1.13 support on MCPE 1.12
             $newVersion = new ProtocolVersion(ProtocolVersion::VERSIONS['1.13.0'], '1.13.0', false);

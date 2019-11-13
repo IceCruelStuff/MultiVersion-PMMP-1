@@ -39,10 +39,20 @@ class PacketManager {
     /** @var array */
     private $queue = []; // Packet queue to prevent duplications
 
+    /**
+     * PacketManager constructor.
+     *
+     * @param Main $pl
+     */
     public function __construct(Main $pl) {
         $this->plugin = $pl;
     }
 
+    /**
+     * @param ProtocolVersion $pv
+     *
+     * @return bool
+     */
     public function registerProtocol(ProtocolVersion $pv): Bool {
         if (isset($this->registered[$pv->getProtocol()])) {
             return false;
@@ -53,6 +63,11 @@ class PacketManager {
         return true;
     }
 
+    /**
+     * @param ProtocolVersion $pv
+     *
+     * @return bool
+     */
     public function unregisterProtocol(ProtocolVersion $pv): Bool {
         if (!isset($this->registered[$pv->getProtocol()])) {
             return false;
@@ -63,7 +78,12 @@ class PacketManager {
         return true;
     }
 
-    public function handlePacketReceive(DataPacketReceiveEvent $event) {
+    /**
+     * @param DataPacketReceiveEvent $event
+     *
+     * @return void
+     */
+    public function handlePacketReceive(DataPacketReceiveEvent $event): void {
         $packet = $event->getPacket();
         $player = $event->getPlayer();
         $nId = $packet::NETWORK_ID;
@@ -122,7 +142,12 @@ class PacketManager {
         }
     }
 
-    public function handlePacketSent(DataPacketSendEvent $event) {
+    /**
+     * @param DataPacketSendEvent $event
+     *
+     * @return void
+     */
+    public function handlePacketSent(DataPacketSendEvent $event): void {
         $packet = $event->getPacket();
         $player = $event->getPlayer();
         $nId = $packet::NETWORK_ID;
@@ -157,6 +182,10 @@ class PacketManager {
         }
     }
 
+    /**
+     * @param DataPacket $packet
+     * @param Player     $player
+     */
     private function handleOldReceived(DataPacket $packet, Player $player) {
         /* This needs some updating to handle updated/outdated packets, right now its only for the servers interpretation. */
         $adapter = new PlayerNetworkSessionAdapter($this->plugin->getServer(), $player);

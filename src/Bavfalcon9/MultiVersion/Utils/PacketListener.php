@@ -17,20 +17,19 @@ declare(strict_types=1);
 namespace Bavfalcon9\MultiVersion\Utils;
 
 abstract class PacketListener {
+    /** @var int */
+    private static $listeners = 0;
+
     /** @var Int */
     private $networkId;
-    /** @var String*/
-    private $matchField;
     /** @var Int */
     private $registered;
     /** @var String */
     private $packetName;
 
-    private static $listeners = 0;
-
     public function __construct(String $packetName, Int $networkId) {
-        self::$listeners++;
-        $this->registered = self::$listeners;
+        static::$listeners++;
+        $this->registered = static::$listeners;
         $this->networkId = $networkId;
         $this->packetName = $packetName;
     }
@@ -48,7 +47,7 @@ abstract class PacketListener {
     }
 
     public static function getAmount(): int {
-        return self::$listeners;
+        return static::$listeners;
     }
 
     abstract public function onPacketCheck(&$packet): Bool;
