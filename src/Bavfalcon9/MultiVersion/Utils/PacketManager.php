@@ -42,7 +42,6 @@ class PacketManager {
 
     /**
      * PacketManager constructor.
-     *
      * @param Main $pl
      */
     public function __construct(Main $pl) {
@@ -51,7 +50,6 @@ class PacketManager {
 
     /**
      * @param ProtocolVersion $pv
-     *
      * @return bool
      */
     public function registerProtocol(ProtocolVersion $pv): Bool {
@@ -66,7 +64,6 @@ class PacketManager {
 
     /**
      * @param ProtocolVersion $pv
-     *
      * @return bool
      */
     public function unregisterProtocol(ProtocolVersion $pv): Bool {
@@ -81,7 +78,6 @@ class PacketManager {
 
     /**
      * @param DataPacketReceiveEvent $event
-     *
      * @return void
      */
     public function handlePacketReceive(DataPacketReceiveEvent $event): void {
@@ -96,7 +92,7 @@ class PacketManager {
                 $pc = $this->registered[$oldProto];
                 $pc->translateLogin($packet);
                 array_splice($this->queue[$packet->username], array_search($nId, $this->queue[$packet->username]));
-            }elseif ($protocol !== ProtocolInfo::CURRENT_PROTOCOL) {
+            } else if ($protocol !== ProtocolInfo::CURRENT_PROTOCOL) {
                 if (!isset($this->registered[$protocol])) {
                     if (isset($this->queue[$packet->username])) {
                         unset($this->queue[$packet->username]);
@@ -120,7 +116,7 @@ class PacketManager {
             }
 
             return;
-        }elseif($packet instanceof TickSyncPacket){
+        } else if ($packet instanceof TickSyncPacket){
             $event->setCancelled();
 
             return;
@@ -149,7 +145,6 @@ class PacketManager {
 
     /**
      * @param DataPacketSendEvent $event
-     *
      * @return void
      */
     public function handlePacketSent(DataPacketSendEvent $event): void {
