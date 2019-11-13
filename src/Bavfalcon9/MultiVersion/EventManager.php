@@ -75,7 +75,7 @@ class EventManager implements Listener {
                 "UpdateBlockPacket" => 0x15
             ]);
             $newVersion->setListeners([
-                'UpdateBlockMaps',
+                'UpdateBlockListener',
                 'LevelEventListener',
                 'PlayerSkinListener',
                 "AddActorListener"

@@ -23,7 +23,7 @@ use Bavfalcon9\MultiVersion\Utils\PacketListener;
 use pocketmine\network\mcpe\protocol\BatchPacket;
 use pocketmine\network\mcpe\protocol\PacketPool;
 
-class UpdateBlockMaps extends PacketListener{
+class UpdateBlockListener extends PacketListener{
 
     public function __construct(){
         parent::__construct('BatchPacket', BatchPacket::NETWORK_ID);
