@@ -16,38 +16,57 @@ declare(strict_types=1);
 
 namespace Bavfalcon9\MultiVersion;
 
+use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets\TickSyncPacket;
 use Bavfalcon9\MultiVersion\Utils\PacketManager;
 use Bavfalcon9\MultiVersion\Utils\ProtocolVersion;
 use pocketmine\event\Listener;
+use pocketmine\network\mcpe\protocol\PacketPool;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\utils\MainLogger;
 use pocketmine\event\server\DataPacketReceiveEvent;
 use pocketmine\event\server\DataPacketSendEvent;
 use function define;
 
 class EventManager implements Listener {
+    /** @var Main */
     private $plugin;
+    /** @var PacketManager */
     private $packetManager;
 
+    /**
+     * EventManager constructor.
+     *
+     * @param Main $pl
+     */
     public function __construct(Main $pl) {
         $this->plugin = $pl;
         $this->packetManager = new PacketManager($pl);
         $this->loadMultiVersion();
     }
 
-    public function onReceive(DataPacketReceiveEvent $event) {
+    /**
+     * @param DataPacketReceiveEvent $event
+     *
+     * @return void
+     */
+    public function onReceive(DataPacketReceiveEvent $event): void {
         $this->packetManager->handlePacketReceive($event);
-        return;
     }
 
-    public function onSend(DataPacketSendEvent $event) {
+    /**
+     * @param DataPacketSendEvent $event
+     *
+     * @return void
+     */
+    public function onSend(DataPacketSendEvent $event): void {
         $this->packetManager->handlePacketSent($event);
-        return;
     }
 
-    private function loadMultiVersion() {
-        if ($this->plugin->server_version === '1.12.0') {
+    private function loadMultiVersion(): void {
+        if (ProtocolInfo::MINECRAFT_VERSION_NETWORK === '1.12.0') {
             // 1.13 support on MCPE 1.12
             $newVersion = new ProtocolVersion(ProtocolVersion::VERSIONS['1.13.0'], '1.13.0', false);
+            PacketPool::registerPacket(new TickSyncPacket());
             $newVersion->setProtocolPackets([
                 "LoginPacket" => 0x01,
                 "StartGamePacket" => 0x0b,
@@ -56,7 +75,10 @@ class EventManager implements Listener {
                 "UpdateBlockPacket" => 0x15
             ]);
             $newVersion->setListeners([
-                'UpdateBlockMaps'
+                'UpdateBlockListener',
+                'LevelEventListener',
+                'PlayerSkinListener',
+                "AddActorListener"
             ]);
             $newVersion = $this->packetManager->registerProtocol($newVersion);
             define('MULTIVERSION_v1_13_0', $this->plugin->getDataFolder().'v1_13_0');
@@ -67,7 +89,7 @@ class EventManager implements Listener {
             }
         }
 
-        if ($this->plugin->server_version === '1.13.0') {
+        if (ProtocolInfo::MINECRAFT_VERSION_NETWORK === '1.13.0') {
             // 1.12 support on MCPE 1.13
             $newVersion = new ProtocolVersion(ProtocolVersion::VERSIONS['1.12.0'], '1.12.0', false);
             $newVersion->setProtocolPackets([
@@ -88,5 +110,4 @@ class EventManager implements Listener {
             }
         }
     }
-
 }

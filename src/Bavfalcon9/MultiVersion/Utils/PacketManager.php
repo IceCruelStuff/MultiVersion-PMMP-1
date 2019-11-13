@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace Bavfalcon9\MultiVersion\Utils;
 
 use Bavfalcon9\MultiVersion\Main;
+use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets\TickSyncPacket;
 use pocketmine\Player;
 use pocketmine\network\mcpe\PlayerNetworkSessionAdapter;
 use pocketmine\network\mcpe\protocol\DataPacket;
@@ -39,10 +40,18 @@ class PacketManager {
     /** @var array */
     private $queue = []; // Packet queue to prevent duplications
 
+    /**
+     * PacketManager constructor.
+     * @param Main $pl
+     */
     public function __construct(Main $pl) {
         $this->plugin = $pl;
     }
 
+    /**
+     * @param ProtocolVersion $pv
+     * @return bool
+     */
     public function registerProtocol(ProtocolVersion $pv): Bool {
         if (isset($this->registered[$pv->getProtocol()])) {
             return false;
@@ -53,6 +62,10 @@ class PacketManager {
         return true;
     }
 
+    /**
+     * @param ProtocolVersion $pv
+     * @return bool
+     */
     public function unregisterProtocol(ProtocolVersion $pv): Bool {
         if (!isset($this->registered[$pv->getProtocol()])) {
             return false;
@@ -63,7 +76,11 @@ class PacketManager {
         return true;
     }
 
-    public function handlePacketReceive(DataPacketReceiveEvent $event) {
+    /**
+     * @param DataPacketReceiveEvent $event
+     * @return void
+     */
+    public function handlePacketReceive(DataPacketReceiveEvent $event): void {
         $packet = $event->getPacket();
         $player = $event->getPlayer();
         $nId = $packet::NETWORK_ID;
@@ -71,14 +88,11 @@ class PacketManager {
             $protocol = $packet->protocol;
             if (isset($this->queue[$packet->username]) and in_array($nId, $this->queue[$packet->username])) {
                 $oldProto = $this->oldplayers[$packet->username];
-                $this->plugin->getLogger()->debug("§eUser: {$packet->username} [attempting to hack login for protocol: {$oldProto}]");
+                $this->plugin->getLogger()->debug("§eUser: {$packet->username} [attempting to hack login for protocol: $oldProto]");
                 $pc = $this->registered[$oldProto];
                 $pc->translateLogin($packet);
                 array_splice($this->queue[$packet->username], array_search($nId, $this->queue[$packet->username]));
-                return;
-            }
-
-            if ($protocol !== ProtocolInfo::CURRENT_PROTOCOL) {
+            } else if ($protocol !== ProtocolInfo::CURRENT_PROTOCOL) {
                 if (!isset($this->registered[$protocol])) {
                     if (isset($this->queue[$packet->username])) {
                         unset($this->queue[$packet->username]);
@@ -87,7 +101,6 @@ class PacketManager {
                     $this->plugin->getLogger()->critical("{$packet->username} tried to join with protocol: $protocol");
                     $player->close('', '§c[MultiVersion]: Your game version is not yet supported here. [$protocol]');
                     $event->setCancelled();
-                    return;
                 } else {
                     $this->plugin->getLogger()->debug("§e {$packet->username} joining with protocol: $protocol");
                     $this->oldplayers[$packet->username] = $protocol;
@@ -95,15 +108,18 @@ class PacketManager {
                     array_push($this->queue[$packet->username], $nId);
                     $pc = $this->registered[$protocol];
                     $pkN = $pc->getPacketName($nId);
-                    $pc->changePacket($pkN, $packet, 'RECIEVE');
+                    $pc->changePacket($pkN, $packet, 'RECEIVE');
 
                     $this->handleOldReceived($packet, $player);
                     $event->setCancelled();
-                    return;
                 }
-            } else {
-                return;
             }
+
+            return;
+        } else if ($packet instanceof TickSyncPacket){
+            $event->setCancelled();
+
+            return;
         }
 
         if (!isset($this->oldplayers[$player->getName()])) {
@@ -127,7 +143,11 @@ class PacketManager {
         }
     }
 
-    public function handlePacketSent(DataPacketSendEvent $event) {
+    /**
+     * @param DataPacketSendEvent $event
+     * @return void
+     */
+    public function handlePacketSent(DataPacketSendEvent $event): void {
         $packet = $event->getPacket();
         $player = $event->getPlayer();
         $nId = $packet::NETWORK_ID;
@@ -162,6 +182,10 @@ class PacketManager {
         }
     }
 
+    /**
+     * @param DataPacket $packet
+     * @param Player     $player
+     */
     private function handleOldReceived(DataPacket $packet, Player $player) {
         /* This needs some updating to handle updated/outdated packets, right now its only for the servers interpretation. */
         $adapter = new PlayerNetworkSessionAdapter($this->plugin->getServer(), $player);

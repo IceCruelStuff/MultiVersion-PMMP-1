@@ -61,15 +61,26 @@ class ProtocolVersion {
         $this->registerListeners();
     }
 
+    /**
+     * @param array $packets
+     */
     public function setProtocolPackets(Array $packets) {
         $this->protocolPackets = $packets;
     }
 
+    /**
+     * @param array $listeners
+     */
     public function setListeners(Array $listeners) {
         $this->wantedListeners = $listeners;
         $this->registerListeners();
     }
 
+    /**
+     * @param PacketListener $listener
+     *
+     * @return bool
+     */
     public function addPacketListener(PacketListener $listener): Bool {
         if (isset($this->packetListeners[$listener->getName()])) {
             return false;
@@ -79,19 +90,33 @@ class ProtocolVersion {
         }
     }
 
+    /**
+     * @return int
+     */
     public function getProtocol(): int {
         return $this->protocol;
     }
 
+    /**
+     * @return array
+     */
     public function getProtocolPackets(): array {
         return $this->protocolPackets;
     }
 
+    /**
+     * @return String
+     */
     public function getMinecraftVersion(): String {
         return $this->minecraftVersion;
     }
 
-    public function getPacketName(Float $id): ?String {
+    /**
+     * @param Float $id
+     *
+     * @return String
+     */
+    public function getPacketName(Float $id): String {
         foreach ($this->protocolPackets as $name => $pid) {
             if ($id == $pid) {
                 return $name;
@@ -101,7 +126,14 @@ class ProtocolVersion {
         return "$id";
     }
 
-    public function changePacket(String &$name, &$oldPacket, String $type = 'Sent') {
+    /**
+     * @param String $name
+     * @param mixed  $oldPacket
+     * @param String $type
+     *
+     * @return mixed
+     */
+    public function changePacket(String $name, &$oldPacket, String $type = 'Sent') {
         $modified = false;
         foreach ($this->packetListeners as $listener) {
             if ($listener->getPacketName() === $oldPacket->getName() && $oldPacket::NETWORK_ID === $listener->getPacketNetworkID()) {
@@ -120,12 +152,12 @@ class ProtocolVersion {
             return $oldPacket;
         }
 
-        if (!isset($this->protocolPackets[$name]) && $this->restricted === true) {
+        if (!isset($this->protocolPackets[$name]) && $this->restricted) {
             return null;
         }
 
         if (!isset($this->protocolPackets[$name])) {
-            if (self::DEVELOPER === true) {
+            if (self::DEVELOPER) {
                 MainLogger::getLogger()->info("§c[MultiVersion] DEBUG:§e Packet §8[§f {$oldPacket->getName()} §8| §f".$oldPacket::NETWORK_ID."§8]§e requested a change but no change supported §a{$type}§e.");
             }
 
