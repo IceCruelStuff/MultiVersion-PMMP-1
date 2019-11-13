@@ -23,7 +23,6 @@ use pocketmine\network\mcpe\protocol\types\RuntimeBlockMapping as PMRuntimeBlock
 use Bavfalcon9\MultiVersion\Utils\PacketListener;
 use pocketmine\network\mcpe\protocol\BatchPacket;
 use pocketmine\network\mcpe\protocol\PacketPool;
-use function var_dump;
 
 class AddActorListener extends PacketListener{
 
@@ -59,7 +58,6 @@ class AddActorListener extends PacketListener{
             $pk->decode();
             if ($pk instanceof AddActorPacket) {
                 if ($pk->type === Entity::FALLING_BLOCK) {
-                    var_dump($pk->metadata[Entity::DATA_VARIANT]);
                     list($id, $meta) = PMRuntimeBlockMapping::fromStaticRuntimeId($pk->metadata[Entity::DATA_VARIANT][1]);
                     $pk->metadata[Entity::DATA_VARIANT][1] = RuntimeBlockMapping::toStaticRuntimeId($id, $meta);
                 }
