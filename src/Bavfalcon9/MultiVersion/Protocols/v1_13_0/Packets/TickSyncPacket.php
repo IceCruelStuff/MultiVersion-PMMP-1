@@ -29,13 +29,13 @@ class TickSyncPacket extends DataPacket{
     public $serverReceptionTimestamp;
 
     protected function encodePayload(){
-        $this->putVarLong($this->clientRequestTimestamp);
-        $this->putVarLong($this->serverReceptionTimestamp);
+        $this->putLong($this->clientRequestTimestamp);
+        $this->putLong($this->serverReceptionTimestamp);
     }
 
     protected function decodePayload(){
-        $this->clientRequestTimestamp = $this->getVarLong();
-        $this->serverReceptionTimestamp = $this->getVarLong();
+        $this->clientRequestTimestamp = $this->getLong();
+        $this->serverReceptionTimestamp = $this->getLong();
     }
 
     public function handle(NetworkSession $session) : bool{
