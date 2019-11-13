@@ -28,8 +28,8 @@ abstract class PacketListener {
     private $packetName;
 
     public function __construct(String $packetName, Int $networkId) {
-        static::$listeners++;
-        $this->registered = static::$listeners;
+        self::$listeners++;
+        $this->registered = self::$listeners;
         $this->networkId = $networkId;
         $this->packetName = $packetName;
     }
@@ -47,7 +47,7 @@ abstract class PacketListener {
     }
 
     public static function getAmount(): int {
-        return static::$listeners;
+        return self::$listeners;
     }
 
     abstract public function onPacketCheck(&$packet): Bool;
