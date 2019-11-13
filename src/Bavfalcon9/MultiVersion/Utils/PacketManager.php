@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace Bavfalcon9\MultiVersion\Utils;
 
 use Bavfalcon9\MultiVersion\Main;
+use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets\TickSyncPacket;
 use pocketmine\Player;
 use pocketmine\network\mcpe\PlayerNetworkSessionAdapter;
 use pocketmine\network\mcpe\protocol\DataPacket;
@@ -117,6 +118,10 @@ class PacketManager {
                     $event->setCancelled();
                 }
             }
+
+            return;
+        }elseif($packet instanceof TickSyncPacket){
+            $event->setCancelled();
 
             return;
         }

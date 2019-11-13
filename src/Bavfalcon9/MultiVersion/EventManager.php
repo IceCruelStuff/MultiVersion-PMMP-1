@@ -16,9 +16,11 @@ declare(strict_types=1);
 
 namespace Bavfalcon9\MultiVersion;
 
+use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets\TickSyncPacket;
 use Bavfalcon9\MultiVersion\Utils\PacketManager;
 use Bavfalcon9\MultiVersion\Utils\ProtocolVersion;
 use pocketmine\event\Listener;
+use pocketmine\network\mcpe\protocol\PacketPool;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\utils\MainLogger;
 use pocketmine\event\server\DataPacketReceiveEvent;
@@ -64,6 +66,7 @@ class EventManager implements Listener {
         if (ProtocolInfo::MINECRAFT_VERSION_NETWORK === '1.12.0') {
             // 1.13 support on MCPE 1.12
             $newVersion = new ProtocolVersion(ProtocolVersion::VERSIONS['1.13.0'], '1.13.0', false);
+            PacketPool::registerPacket(new TickSyncPacket());
             $newVersion->setProtocolPackets([
                 "LoginPacket" => 0x01,
                 "StartGamePacket" => 0x0b,
