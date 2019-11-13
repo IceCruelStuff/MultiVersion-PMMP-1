@@ -56,7 +56,7 @@ class PlayerListPacket extends DataPacket implements CustomTranslator {
                 $entry->xboxUserId = $this->getString();
                 $entry->platformChatId = $this->getString();
                 $entry->buildPlatform = $this->getLInt();
-                $entry->skin = $this->getSkin(); # test
+                $entry->skin = $this->getSkin();
                 $entry->isTeacher = $this->getBool();
                 $entry->isHost = $this->getBool();
             }else{
@@ -89,7 +89,7 @@ class PlayerListPacket extends DataPacket implements CustomTranslator {
         }
     }
 
-    public function getSkin() : Skin {
+    public function getSkin() : PMSkin {
         $skinId = $this->getString();
         $skinResourcePatch = $this->getString();
         $skinData = $this->getImage();
@@ -107,8 +107,8 @@ class PlayerListPacket extends DataPacket implements CustomTranslator {
         $capeOnClassic = $this->getBool();
         $capeId = $this->getString();
         $fullSkinId = $this->getString();
-
-        return new Skin($skinId, $skinResourcePatch, $skinData, $animations, $capeData, $geometryData, $animationData, $premium, $persona, $capeOnClassic, $capeId);
+        $skin = new Skin($skinId, $skinResourcePatch, $skinData, $animations, $capeData, $geometryData, $animationData, $premium, $persona, $capeOnClassic, $capeId);
+        return self::convertToLegacySkin($skin);
     }
 
     public function putSkin(Skin $skin) : void {
@@ -156,6 +156,8 @@ class PlayerListPacket extends DataPacket implements CustomTranslator {
      */
     public function translateCustomPacket($packet) {
         $this->type = $packet->type;
+        echo "REQUESTED:\n";
+        var_dump($packet);
         foreach($packet->entries as $key => $entry) {
             if ($entry->username === NULL) {
                 unset($packet->entries[$key]);
@@ -165,8 +167,26 @@ class PlayerListPacket extends DataPacket implements CustomTranslator {
             if ($entry->skin === NULL) continue;
             $entry->skin = self::convertFromLegacySkin($entry->skin);
         }
+        echo "AFTER TRANSLATION:\n";
+        var_dump($packet);
+        echo "============================\n";
 
         return $this;
+    }
+
+    /**
+     * @param Skin $skin
+     *
+     * @return PMSkin
+     */
+    public static function convertToLegacySkin(Skin $skin): PMSkin {
+        $skinId = $skin->getSkinId();
+        $skinData = $skin->getSkinData()->getData();
+        $capeData = $skin->getCapeData()->getData();
+        $geometryData = $skin->getGeometryData();
+        $geometryName = 'MultiVersionv1';
+
+        return new PMSkin($skinId, $skinData, $capeData, $geometryName, $geometryData);
     }
 
     /**
@@ -174,7 +194,7 @@ class PlayerListPacket extends DataPacket implements CustomTranslator {
      *
      * @return Skin
      */
-    public static function convertFromLegacySkin(PMSkin $skin) : Skin {
+    public static function convertFromLegacySkin(PMSkin $skin): Skin {
         $skinId = $skin->getSkinId();
         $skinData = SerializedImage::fromLegacy($skin->getSkinData());
         $capeData = SerializedImage::fromLegacy($skin->getCapeData());
@@ -186,8 +206,7 @@ class PlayerListPacket extends DataPacket implements CustomTranslator {
             'MultiVersion_v1.0.0',
             $skinData,
             [],
-            $capeData,
-            $geometryData
+            $capeData
         );
     }
 }
