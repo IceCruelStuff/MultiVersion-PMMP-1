@@ -125,7 +125,7 @@ class ProtocolVersion {
         }
 
         if (!isset($this->protocolPackets[$name])) {
-            if (self::DEVELOPER === true) {
+            if (self::DEVELOPER) {
                 MainLogger::getLogger()->info("§c[MultiVersion] DEBUG:§e Packet §8[§f {$oldPacket->getName()} §8| §f".$oldPacket::NETWORK_ID."§8]§e requested a change but no change supported §a{$type}§e.");
             }
 
