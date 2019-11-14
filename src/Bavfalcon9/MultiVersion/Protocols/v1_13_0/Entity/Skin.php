@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace Bavfalcon9\MultiVersion\Protocols\v1_13_0\Entity;
 
+use pocketmine\entity\Skin as PMSkin;
 use Ahc\Json\Comment as CommentedJsonDecoder;
 use InvalidArgumentException;
 use function json_encode;
@@ -63,6 +64,43 @@ class Skin{
         $this->capeOnClassic = $capeOnClassic;
         $this->capeId = $capeId;
         $this->debloatGeometryData();
+    }
+
+    /**
+     * @param Skin $skin
+     *
+     * @return PMSkin
+     */
+    public static function convertToLegacySkin(Skin $skin): PMSkin {
+        $skinId = $skin->getSkinId();
+        $skinData = $skin->getSkinData()->getData();
+        $capeData = $skin->getCapeData()->getData();
+        $geometryData = $skin->getGeometryData();
+        $geometryName = 'MultiVersionv1';
+
+        return new PMSkin($skinId, $skinData, $capeData, $geometryName, $geometryData);
+    }
+
+    /**
+     * @param PMSkin $skin
+     *
+     * @return Skin
+     */
+    public static function convertFromLegacySkin(PMSkin $skin): Skin {
+        $skinId = $skin->getSkinId();
+        $skinData = SerializedImage::fromLegacy($skin->getSkinData());
+        $capeData = SerializedImage::fromLegacy($skin->getCapeData());
+        $geometryData = $skin->getGeometryData();
+        $geometryName = $skin->getGeometryName();
+
+        return new Skin(
+            $skinId,
+            'MultiVersion_v1.0.0',
+            $skinData,
+            [],
+            $capeData/*
+            $geometryData - CAUSES ISSUES? */
+        );
     }
 
     public static function null() : Skin{

@@ -133,7 +133,7 @@ class ProtocolVersion {
      *
      * @return mixed
      */
-    public function changePacket(String $name, &$oldPacket, String $type = 'Sent') {
+    public function changePacket(String $name, &$oldPacket, String $type = 'SENT') {
         $modified = false;
         foreach ($this->packetListeners as $listener) {
             if ($listener->getPacketName() === $oldPacket->getName() && $oldPacket::NETWORK_ID === $listener->getPacketNetworkID()) {
@@ -170,7 +170,7 @@ class ProtocolVersion {
 
         if (!$oldPacket instanceof DataPacket) {
             if (self::DEVELOPER) {
-                MainLogger::getLogger()->info("§8[MULTIVERSION]: Packet change requested on non DataPacket typing. {$oldPacket->getName()} | " . $oldPacket::NETWORK_ID);
+                MainLogger::getLogger()->info("§8[MultiVersion]: Packet change requested on non DataPacket typing. {$oldPacket->getName()} | " . $oldPacket::NETWORK_ID);
             }
         }
 

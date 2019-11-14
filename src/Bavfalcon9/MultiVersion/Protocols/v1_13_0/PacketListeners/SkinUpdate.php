@@ -17,12 +17,13 @@ declare(strict_types=1);
 namespace Bavfalcon9\MultiVersion\Protocols\v1_13_0\PacketListeners;
 
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets\PlayerListPacket;
+use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Entity\Skin;
 use Bavfalcon9\MultiVersion\Utils\PacketListener;
 use pocketmine\network\mcpe\protocol\BatchPacket;
 use pocketmine\network\mcpe\protocol\PacketPool;
-use pocketmine\network\mcpe\protocol\PlayerListPacket as PMPlayerList;
+use pocketmine\network\mcpe\protocol\AddEntityPacket;
 
-class PlayerSkinListener extends PacketListener {
+class SkinUpdate extends PacketListener {
     public function __construct() {
         parent::__construct('BatchPacket', BatchPacket::NETWORK_ID);
     }
@@ -35,9 +36,7 @@ class PlayerSkinListener extends PacketListener {
     public function onPacketCheck(&$packet): Bool {
         foreach($packet->getPackets() as $buf){
             $pk = PacketPool::getPacket($buf);
-            if($pk instanceof PMPlayerList){
-                return true;
-            }
+            if ($pk instanceof AddEntityPacket) return true;
         }
 
         return false;
@@ -53,10 +52,8 @@ class PlayerSkinListener extends PacketListener {
         foreach($packet->getPackets() as $buf){
             $pk = PacketPool::getPacket($buf);
             $pk->decode();
-            if($pk instanceof PMPlayerList){
-                $newPacket = new PlayerListPacket;
-
-                $pk = $newPacket->translateCustomPacket($pk);
+            if ($pk instanceof AddEntityPacket) {
+                var_dump($pk);
             }
             $pk->encode();
 
