@@ -17,12 +17,14 @@ declare(strict_types=1);
 namespace Bavfalcon9\MultiVersion\Utils;
 
 use Bavfalcon9\MultiVersion\Main;
+use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets\RespawnPacket;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets\TickSyncPacket;
 use pocketmine\Player;
 use pocketmine\network\mcpe\PlayerNetworkSessionAdapter;
 use pocketmine\network\mcpe\protocol\DataPacket;
 use pocketmine\network\mcpe\protocol\LoginPacket;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
+use pocketmine\network\mcpe\protocol\DisconnectPacket;
 use pocketmine\event\server\DataPacketReceiveEvent;
 use pocketmine\event\server\DataPacketSendEvent;
 use function array_push;
@@ -39,6 +41,8 @@ class PacketManager {
     private $oldplayers = [];
     /** @var array */
     private $queue = []; // Packet queue to prevent duplications
+    /** @var array */
+    public static $protocolPlayers = [];
 
     /**
      * PacketManager constructor.
@@ -84,6 +88,8 @@ class PacketManager {
         $packet = $event->getPacket();
         $player = $event->getPlayer();
         $nId = $packet::NETWORK_ID;
+        self::$protocolPlayers = $this->oldplayers;
+
         if ($packet instanceof LoginPacket) {
             $protocol = $packet->protocol;
             if (isset($this->queue[$packet->username]) and in_array($nId, $this->queue[$packet->username])) {
@@ -120,6 +126,14 @@ class PacketManager {
             $event->setCancelled();
 
             return;
+        } else if ($packet instanceof RespawnPacket) {
+            $pk = new RespawnPacket();
+            $pk->position = $packet->position;
+            $pk->state = RespawnPacket::STATE_READY_TO_SPAWN;
+            $pk->entityRuntimeId = $player->getId();
+            $player->dataPacket($pk);
+
+            return;
         }
 
         if (!isset($this->oldplayers[$player->getName()])) {
@@ -138,8 +152,6 @@ class PacketManager {
             $protocol = $this->registered[$protocol];
             $pkN = $protocol->getPacketName($nId);
             $protocol->changePacket($pkN, $packet, 'RECEIVE');
-            $this->handleOldReceived($packet, $player);
-            $event->setCancelled();
         }
     }
 
@@ -166,6 +178,10 @@ class PacketManager {
                 return;
             }
 
+            if ($packet instanceof RespawnPacket){
+                return;
+            }
+
             $protocol = $this->oldplayers[$player->getName()];
             $protocol = $this->registered[$protocol];
             $pkN = $protocol->getPacketName($nId);
@@ -187,7 +203,6 @@ class PacketManager {
      * @param Player     $player
      */
     private function handleOldReceived(DataPacket $packet, Player $player) {
-        /* This needs some updating to handle updated/outdated packets, right now its only for the servers interpretation. */
         $adapter = new PlayerNetworkSessionAdapter($this->plugin->getServer(), $player);
 		$adapter->handleDataPacket($packet);
     }
