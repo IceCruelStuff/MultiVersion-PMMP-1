@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace Bavfalcon9\MultiVersion;
 
+use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets\RespawnPacket;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets\TickSyncPacket;
 use Bavfalcon9\MultiVersion\Utils\PacketManager;
 use Bavfalcon9\MultiVersion\Utils\ProtocolVersion;
@@ -67,12 +68,14 @@ class EventManager implements Listener {
             // 1.13 support on MCPE 1.12
             $newVersion = new ProtocolVersion(ProtocolVersion::VERSIONS["1.13.0"], "1.13.0", false);
             PacketPool::registerPacket(new TickSyncPacket());
+            PacketPool::registerPacket(new RespawnPacket());
             $newVersion->setProtocolPackets([
                 "LoginPacket" => 0x01,
                 "StartGamePacket" => 0x0b,
                 "PlayerListPacket" => 0x3f,
                 "PlayerSkinPacket" => 0x5d,
-                "UpdateBlockPacket" => 0x15
+                "UpdateBlockPacket" => 0x15,
+                "RespawnPacket" => 0x2d
             ]);
             $newVersion->setListeners([
                 "UpdateBlockListener",

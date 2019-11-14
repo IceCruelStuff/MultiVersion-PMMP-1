@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace Bavfalcon9\MultiVersion\Utils;
 
 use Bavfalcon9\MultiVersion\Main;
+use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets\RespawnPacket;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets\TickSyncPacket;
 use pocketmine\Player;
 use pocketmine\network\mcpe\PlayerNetworkSessionAdapter;
@@ -120,6 +121,14 @@ class PacketManager {
             $event->setCancelled();
 
             return;
+        } else if ($packet instanceof RespawnPacket) {
+            $pk = new RespawnPacket();
+            $pk->position = $packet->position;
+            $pk->state = RespawnPacket::STATE_READY_TO_SPAWN;
+            $pk->entityRuntimeId = $player->getId();
+            $player->dataPacket($pk);
+
+            return;
         }
 
         if (!isset($this->oldplayers[$player->getName()])) {
@@ -161,6 +170,10 @@ class PacketManager {
             }
 
             if (!isset($this->oldplayers[$player->getName()])) {
+                return;
+            }
+
+            if ($packet instanceof RespawnPacket){
                 return;
             }
 
