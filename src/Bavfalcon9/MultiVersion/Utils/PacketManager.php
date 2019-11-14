@@ -24,6 +24,7 @@ use pocketmine\network\mcpe\PlayerNetworkSessionAdapter;
 use pocketmine\network\mcpe\protocol\DataPacket;
 use pocketmine\network\mcpe\protocol\LoginPacket;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
+use pocketmine\network\mcpe\protocol\DisconnectPacket;
 use pocketmine\event\server\DataPacketReceiveEvent;
 use pocketmine\event\server\DataPacketSendEvent;
 use function array_push;
@@ -40,6 +41,8 @@ class PacketManager {
     private $oldplayers = [];
     /** @var array */
     private $queue = []; // Packet queue to prevent duplications
+    /** @var array */
+    public static $protocolPlayers = [];
 
     /**
      * PacketManager constructor.
@@ -85,6 +88,8 @@ class PacketManager {
         $packet = $event->getPacket();
         $player = $event->getPlayer();
         $nId = $packet::NETWORK_ID;
+        self::$protocolPlayers = $this->oldplayers;
+
         if ($packet instanceof LoginPacket) {
             $protocol = $packet->protocol;
             if (isset($this->queue[$packet->username]) and in_array($nId, $this->queue[$packet->username])) {

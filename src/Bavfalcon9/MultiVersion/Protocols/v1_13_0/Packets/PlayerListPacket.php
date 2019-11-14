@@ -16,6 +16,8 @@ declare(strict_types=1);
 
 namespace Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets;
 
+use Bavfalcon9\MultiVersion\Utils\PacketManager;
+use Bavfalcon9\MultiVersion\Utils\ProtocolVersion;
 use Bavfalcon9\MultiVersion\Protocols\CustomTranslator;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Entity\Skin;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Entity\SkinAnimation;
@@ -50,17 +52,41 @@ class PlayerListPacket extends DataPacket implements CustomTranslator {
         $count = $this->getUnsignedVarInt();
         for($i = 0; $i < $count; ++$i){
             $entry = new PlayerListEntry();
-            if($this->type === self::TYPE_ADD){
+            if($this->type === self::TYPE_ADD) {
                 $entry->uuid = $this->getUUID();
                 $entry->entityUniqueId = $this->getEntityUniqueId();
                 $entry->username = $this->getString();
-                $entry->xboxUserId = $this->getString();
-                $entry->platformChatId = $this->getString();
-                $entry->buildPlatform = $this->getLInt();
-                $entry->skin = $this->getSkin();
-                $entry->isTeacher = $this->getBool();
-                $entry->isHost = $this->getBool();
-            }else{
+
+                // Assuming they're 1.12 because they aren't in the array
+                if (!isset(PacketManager::$protocolPlayers[$entry->username])) {
+                    $skinId = $this->getString();
+                    $skinData = $this->getString();
+                    $capeData = $this->getString();
+                    $geometryName = $this->getString();
+				    $geometryData = $this->getString();
+                    $entry->skin = new PMSkin(
+                        $skinId,
+                        $skinData,
+                        $capeData,
+                        $geometryName,
+                        $geometryData
+                    );
+                    $entry->xboxUserId = $this->getString();
+                    $entry->platformChatId = $this->getString();
+                    $entry->skin = Skin::convertFromLegacySkin($entry->skin);
+                    $entry->buildPlatform = -1;
+                    $entry->isTeacher = false;
+                    $entry->isHost = false;
+                } else {
+                    if (PacketManager::$protocolPlayers[$entry->username] !== ProtocolVersion::VERSIONS['1.13.0']) throw new \Exception('Not sure what to do here');
+                    $entry->xboxUserId = $this->getString();
+                    $entry->platformChatId = $this->getString();
+                    $entry->buildPlatform = $this->getLInt();
+                    $entry->skin = $this->getSkin();
+                    $entry->isTeacher = $this->getBool();
+                    $entry->isHost = $this->getBool();
+                }
+            } else {
                 $entry->uuid = $this->getUUID();
             }
             $this->entries[$i] = $entry;
@@ -159,11 +185,14 @@ class PlayerListPacket extends DataPacket implements CustomTranslator {
         if ($packet->type !== self::TYPE_ADD) return $packet;
         $this->type = $packet->type;
         $this->entries = $packet->entries;
-        foreach($this->entries as $key => $entry) {
+        /**
+         * ENTRY IS A REFERENCE BECAUSE ITS WORKING WHEN I DO THAT, THX
+         */
+        foreach($this->entries as $key => &$entry) {
             $buildPlatform = (!isset($entry->buildPlatform)) ? -1 : $entry->buildPlatform;
             $isTeacher = (!isset($entry->isTeacher)) ? false : $entry->isTeacher;
             $isHost = (!isset($entry->isHost)) ? false : $entry->isHost;
-            $skin = (!$entry->skin) ? $entry->skin : ($entry->skin instanceof PMSkin) ? Skin::convertFromLegacySkin($entry->skin) : $entry->skin;
+            $skin = ($entry->skin instanceof PMSkin) ? Skin::convertFromLegacySkin($entry->skin) : $entry->skin;
 
             $newEntry = new PlayerListEntry();
             $newEntry->uuid = $entry->uuid;
@@ -177,7 +206,28 @@ class PlayerListPacket extends DataPacket implements CustomTranslator {
             $newEntry->isHost = $isHost;
             $entry = $newEntry;
         }
-        var_dump($this);
         return $this;
     }
+    /*
+    public function updateEntries(): void {
+        if ($this->type !== self::TYPE_ADD) return;
+        foreach($this->entries as $key => &$entry) {
+            $buildPlatform = (!isset($entry->buildPlatform)) ? -1 : $entry->buildPlatform;
+            $isTeacher = (!isset($entry->isTeacher)) ? false : $entry->isTeacher;
+            $isHost = (!isset($entry->isHost)) ? false : $entry->isHost;
+            $skin = ($entry->skin instanceof PMSkin) ? Skin::convertFromLegacySkin($entry->skin) : $entry->skin;
+
+            $newEntry = new PlayerListEntry();
+            $newEntry->uuid = $entry->uuid;
+            $newEntry->entityUniqueId = $entry->entityUniqueId;
+            $newEntry->username = $entry->username;
+            $newEntry->xboxUserId = $entry->xboxUserId;
+            $newEntry->platformChatId = $entry->platformChatId;
+            $newEntry->buildPlatform = $buildPlatform;
+            $newEntry->skin = $skin;
+            $newEntry->isTeacher = $isTeacher;
+            $newEntry->isHost = $isHost;
+            $entry = $newEntry;
+        } 
+    }*/
 }
