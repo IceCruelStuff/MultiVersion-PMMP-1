@@ -25,13 +25,12 @@ use pocketmine\network\mcpe\protocol\PacketPool;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\event\server\DataPacketReceiveEvent;
 use pocketmine\event\server\DataPacketSendEvent;
-use pocketmine\event\entity\EntitySpawnEvent;
 use function define;
 
 class EventManager implements Listener {
     /** @var Main */
     private $plugin;
-    /** @var packetManager */
+    /** @var PacketManager */
     private $packetManager;
 
     /**
@@ -80,7 +79,8 @@ class EventManager implements Listener {
                 "LevelEventListener",
                 "PlayerSkinListener",
                 "AddActorListener",
-                "SkinUpdate"
+                "SkinUpdate",
+                "LevelSoundEventListener"
             ]);
             $newVersion = $this->packetManager->registerProtocol($newVersion);
             define("MULTIVERSION_v1_13_0", $this->plugin->getDataFolder()."v1_13_0");
