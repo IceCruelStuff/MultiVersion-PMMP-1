@@ -79,7 +79,6 @@ class EventManager implements Listener {
                 "LevelEventListener",
                 "PlayerSkinListener",
                 "AddActorListener",
-                "SkinUpdate",
                 "LevelSoundEventListener"
             ]);
             $newVersion = $this->packetManager->registerProtocol($newVersion);
