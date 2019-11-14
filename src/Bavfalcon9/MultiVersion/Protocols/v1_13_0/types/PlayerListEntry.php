@@ -14,7 +14,7 @@
 
 declare(strict_types=1);
 
-namespace Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets;
+namespace Bavfalcon9\MultiVersion\Protocols\v1_13_0\types;
 
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Entity\Skin;
 use pocketmine\utils\UUID;

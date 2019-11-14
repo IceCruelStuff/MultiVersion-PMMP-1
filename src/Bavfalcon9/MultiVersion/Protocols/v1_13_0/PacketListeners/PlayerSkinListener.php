@@ -55,7 +55,6 @@ class PlayerSkinListener extends PacketListener {
             $pk->decode();
             if($pk instanceof PMPlayerList){
                 $newPacket = new PlayerListPacket;
-
                 $pk = $newPacket->translateCustomPacket($pk);
             }
             $pk->encode();

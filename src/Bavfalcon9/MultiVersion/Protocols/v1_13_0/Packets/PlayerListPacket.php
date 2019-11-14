@@ -20,10 +20,11 @@ use Bavfalcon9\MultiVersion\Protocols\CustomTranslator;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Entity\Skin;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Entity\SkinAnimation;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Entity\SerializedImage;
+use Bavfalcon9\MultiVersion\Protocols\v1_13_0\types\PlayerListEntry;
 use pocketmine\entity\Skin as PMSkin;
 use pocketmine\network\mcpe\NetworkSession;
 use pocketmine\network\mcpe\protocol\DataPacket;
-use pocketmine\network\mcpe\protocol\types\PlayerListEntry;
+use pocketmine\network\mcpe\protocol\types\PlayerListEntry as PMListEntry;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\PlayerListPacket as PMListPacket;
 use function count;
@@ -74,13 +75,14 @@ class PlayerListPacket extends DataPacket implements CustomTranslator {
                 $buildPlatform = (!isset($entry->buildPlatform)) ? -1 : $entry->buildPlatform;
                 $isTeacher = (!isset($entry->isTeacher)) ? false : $entry->isTeacher;
                 $isHost = (!isset($entry->isHost)) ? false : $entry->isHost;
+                $skin = (!$entry->skin) ? $entry->skin : ($entry->skin instanceof PMSkin) ? Skin::convertFromLegacySkin($entry->skin) : $entry->skin;
                 $this->putUUID($entry->uuid);
                 $this->putEntityUniqueId($entry->entityUniqueId);
                 $this->putString($entry->username);
                 $this->putString($entry->xboxUserId);
                 $this->putString($entry->platformChatId);
                 $this->putLInt($buildPlatform);
-                $this->putSkin(Skin::null());
+                $this->putSkin($skin);
                 $this->putBool($isTeacher);
                 $this->putBool($isHost);
             }else{
@@ -154,16 +156,28 @@ class PlayerListPacket extends DataPacket implements CustomTranslator {
      * @return $this
      */
     public function translateCustomPacket($packet) {
+        if ($packet->type !== self::TYPE_ADD) return $packet;
         $this->type = $packet->type;
-        foreach($packet->entries as $key => $entry) {
-            if ($entry->username === NULL) {
-                unset($packet->entries[$key]);
-                continue;
-            }
+        $this->entries = $packet->entries;
+        foreach($this->entries as $key => $entry) {
+            $buildPlatform = (!isset($entry->buildPlatform)) ? -1 : $entry->buildPlatform;
+            $isTeacher = (!isset($entry->isTeacher)) ? false : $entry->isTeacher;
+            $isHost = (!isset($entry->isHost)) ? false : $entry->isHost;
+            $skin = (!$entry->skin) ? $entry->skin : ($entry->skin instanceof PMSkin) ? Skin::convertFromLegacySkin($entry->skin) : $entry->skin;
 
-            if ($entry->skin === NULL) continue;
-            $entry->skin = Skin::null(); // this is a hack, wow i'm cool
+            $newEntry = new PlayerListEntry();
+            $newEntry->uuid = $entry->uuid;
+            $newEntry->entityUniqueId = $entry->entityUniqueId;
+            $newEntry->username = $entry->username;
+            $newEntry->xboxUserId = $entry->xboxUserId;
+            $newEntry->platformChatId = $entry->platformChatId;
+            $newEntry->buildPlatform = $buildPlatform;
+            $newEntry->skin = $skin;
+            $newEntry->isTeacher = $isTeacher;
+            $newEntry->isHost = $isHost;
+            $entry = $newEntry;
         }
+        var_dump($this);
         return $this;
     }
 }

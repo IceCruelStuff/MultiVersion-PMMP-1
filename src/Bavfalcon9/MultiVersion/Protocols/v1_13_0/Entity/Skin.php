@@ -77,6 +77,10 @@ class Skin{
         $capeData = $skin->getCapeData()->getData();
         $geometryData = $skin->getGeometryData();
         $geometryName = 'MultiVersionv1';
+        if (($geometryData = json_decode($geometryData, true))) {
+            unset($geometryData["format_version"]);
+            $geometryData = json_encode($geometryData);
+        }
 
         return new PMSkin($skinId, $skinData, $capeData, $geometryName, $geometryData);
     }
@@ -98,8 +102,8 @@ class Skin{
             'MultiVersion_v1.0.0',
             $skinData,
             [],
-            $capeData/*
-            $geometryData - CAUSES ISSUES? */
+            $capeData,
+            $geometryData
         );
     }
 
