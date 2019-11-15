@@ -18,7 +18,7 @@ namespace Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets;
 
 use Bavfalcon9\MultiVersion\Utils\PacketManager;
 use Bavfalcon9\MultiVersion\Utils\ProtocolVersion;
-use Bavfalcon9\MultiVersion\Protocols\CustomTranslator;
+use Bavfalcon9\MultiVersion\Utils\CustomTranslator;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Entity\Skin;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Entity\SkinAnimation;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Entity\SerializedImage;

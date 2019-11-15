@@ -14,7 +14,7 @@
 
 declare(strict_types=1);
 
-namespace Bavfalcon9\MultiVersion\Protocols;
+namespace Bavfalcon9\MultiVersion\Utils;
 
 interface CustomTranslator{
 

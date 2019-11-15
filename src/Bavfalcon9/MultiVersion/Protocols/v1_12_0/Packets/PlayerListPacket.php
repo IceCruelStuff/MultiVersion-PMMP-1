@@ -16,7 +16,7 @@ declare(strict_types=1);
 
 namespace Bavfalcon9\MultiVersion\Protocols\v1_12_0\Packets;
 
-use Bavfalcon9\MultiVersion\Protocols\CustomTranslator;
+use Bavfalcon9\MultiVersion\Utils\CustomTranslator;
 use pocketmine\network\mcpe\NetworkSession;
 use pocketmine\network\mcpe\protocol\DataPacket;
 use pocketmine\network\mcpe\protocol\PlayerListPacket as PMPlayerList;
