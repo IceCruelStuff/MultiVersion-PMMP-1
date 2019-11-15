@@ -182,17 +182,17 @@ class PlayerListPacket extends DataPacket implements CustomTranslator {
      * @return $this
      */
     public function translateCustomPacket($packet) {
-        if ($packet->type !== self::TYPE_ADD) return $packet;
+        if ($packet->type !== self::TYPE_ADD) {
+            return $packet;
+        }
+
         $this->type = $packet->type;
         $this->entries = $packet->entries;
-        /**
-         * ENTRY IS A REFERENCE BECAUSE ITS WORKING WHEN I DO THAT, THX
-         */
-        foreach($this->entries as $key => &$entry) {
+
+        foreach($this->entries as $key => $entry) {
             $buildPlatform = (!isset($entry->buildPlatform)) ? -1 : $entry->buildPlatform;
             $isTeacher = (!isset($entry->isTeacher)) ? false : $entry->isTeacher;
             $isHost = (!isset($entry->isHost)) ? false : $entry->isHost;
-            $skin = ($entry->skin instanceof PMSkin) ? Skin::convertFromLegacySkin($entry->skin) : $entry->skin;
 
             $newEntry = new PlayerListEntry();
             $newEntry->uuid = $entry->uuid;
@@ -201,11 +201,13 @@ class PlayerListPacket extends DataPacket implements CustomTranslator {
             $newEntry->xboxUserId = $entry->xboxUserId;
             $newEntry->platformChatId = $entry->platformChatId;
             $newEntry->buildPlatform = $buildPlatform;
-            $newEntry->skin = $skin;
+            $newEntry->skin = $entry->skin instanceof PMSkin ? Skin::convertFromLegacySkin($entry->skin) : $entry->skin;;
             $newEntry->isTeacher = $isTeacher;
             $newEntry->isHost = $isHost;
-            $entry = $newEntry;
+
+            $this->entries[$key] = $newEntry;
         }
+
         return $this;
     }
     /*
