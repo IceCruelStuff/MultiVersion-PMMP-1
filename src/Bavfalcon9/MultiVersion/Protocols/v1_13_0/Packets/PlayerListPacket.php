@@ -201,7 +201,7 @@ class PlayerListPacket extends DataPacket implements CustomTranslator {
             $newEntry->xboxUserId = $entry->xboxUserId;
             $newEntry->platformChatId = $entry->platformChatId;
             $newEntry->buildPlatform = $buildPlatform;
-            $newEntry->skin = $entry->skin instanceof PMSkin ? Skin::convertFromLegacySkin($entry->skin) : $entry->skin;;
+            $newEntry->skin = $entry->skin instanceof PMSkin ? Skin::convertFromLegacySkin($entry->skin) : $entry->skin;
             $newEntry->isTeacher = $isTeacher;
             $newEntry->isHost = $isHost;
 
