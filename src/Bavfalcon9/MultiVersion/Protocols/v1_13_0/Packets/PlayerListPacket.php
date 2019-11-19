@@ -60,7 +60,6 @@ class PlayerListPacket extends DataPacket implements CustomTranslator {
 
                 // Assuming they're 1.12 because they aren't in the array
                 if (!isset(PacketManager::$protocolPlayers[$entry->username])) {
-                    MainLogger::getLogger()->critical("$entry->username is 1.12");
                     $skinId = $this->getString();
                     $skinData = $this->getString();
                     $capeData = $this->getString();
@@ -81,7 +80,6 @@ class PlayerListPacket extends DataPacket implements CustomTranslator {
                     $entry->isHost = false;
                 } else {
                     if (PacketManager::$protocolPlayers[$entry->username] !== ProtocolVersion::VERSIONS['1.13.0']) throw new \Exception('Not sure what to do here');
-                    MainLogger::getLogger()->critical("$entry->username is 1.13");
                     $entry->xboxUserId = $this->getString();
                     $entry->platformChatId = $this->getString();
                     $entry->buildPlatform = $this->getLInt();

@@ -52,8 +52,6 @@ class PlayerSkinListener extends PacketListener {
         $newBatch = new BatchPacket();
         foreach($packet->getPackets() as $buf){
             $pk = PacketPool::getPacket($buf);
-            $txt = ($this->inBound) ? "INBOUND" : "OUT BOUND";
-            echo $txt . "\n\n\n";
             if($pk instanceof PMPlayerList) {
                 if ($this->inBound) {
                     $newPacket = new PlayerListPacket;
