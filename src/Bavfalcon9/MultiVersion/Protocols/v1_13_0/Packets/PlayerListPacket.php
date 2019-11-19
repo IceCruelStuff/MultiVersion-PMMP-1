@@ -29,6 +29,7 @@ use pocketmine\network\mcpe\protocol\DataPacket;
 use pocketmine\network\mcpe\protocol\types\PlayerListEntry as PMListEntry;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\PlayerListPacket as PMListPacket;
+use pocketmine\utils\MainLogger;
 use function count;
 
 class PlayerListPacket extends DataPacket implements CustomTranslator {
@@ -59,6 +60,7 @@ class PlayerListPacket extends DataPacket implements CustomTranslator {
 
                 // Assuming they're 1.12 because they aren't in the array
                 if (!isset(PacketManager::$protocolPlayers[$entry->username])) {
+                    MainLogger::getLogger()->critical("$entry->username is 1.12");
                     $skinId = $this->getString();
                     $skinData = $this->getString();
                     $capeData = $this->getString();
@@ -79,6 +81,7 @@ class PlayerListPacket extends DataPacket implements CustomTranslator {
                     $entry->isHost = false;
                 } else {
                     if (PacketManager::$protocolPlayers[$entry->username] !== ProtocolVersion::VERSIONS['1.13.0']) throw new \Exception('Not sure what to do here');
+                    MainLogger::getLogger()->critical("$entry->username is 1.13");
                     $entry->xboxUserId = $this->getString();
                     $entry->platformChatId = $this->getString();
                     $entry->buildPlatform = $this->getLInt();
@@ -210,26 +213,4 @@ class PlayerListPacket extends DataPacket implements CustomTranslator {
 
         return $this;
     }
-    /*
-    public function updateEntries(): void {
-        if ($this->type !== self::TYPE_ADD) return;
-        foreach($this->entries as $key => &$entry) {
-            $buildPlatform = (!isset($entry->buildPlatform)) ? -1 : $entry->buildPlatform;
-            $isTeacher = (!isset($entry->isTeacher)) ? false : $entry->isTeacher;
-            $isHost = (!isset($entry->isHost)) ? false : $entry->isHost;
-            $skin = ($entry->skin instanceof PMSkin) ? Skin::convertFromLegacySkin($entry->skin) : $entry->skin;
-
-            $newEntry = new PlayerListEntry();
-            $newEntry->uuid = $entry->uuid;
-            $newEntry->entityUniqueId = $entry->entityUniqueId;
-            $newEntry->username = $entry->username;
-            $newEntry->xboxUserId = $entry->xboxUserId;
-            $newEntry->platformChatId = $entry->platformChatId;
-            $newEntry->buildPlatform = $buildPlatform;
-            $newEntry->skin = $skin;
-            $newEntry->isTeacher = $isTeacher;
-            $newEntry->isHost = $isHost;
-            $entry = $newEntry;
-        } 
-    }*/
 }

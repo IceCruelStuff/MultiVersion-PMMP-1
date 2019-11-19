@@ -114,7 +114,7 @@ class PacketManager {
                     array_push($this->queue[$packet->username], $nId);
                     $pc = $this->registered[$protocol];
                     $pkN = $pc->getPacketName($nId);
-                    $pc->changePacket($pkN, $packet, 'RECEIVE');
+                    $pc->changePacket($pkN, $packet, $player, 'RECEIVE');
 
                     $this->handleOldReceived($packet, $player);
                     $event->setCancelled();
@@ -134,6 +134,10 @@ class PacketManager {
             $player->dataPacket($pk);
 
             return;
+        } else if ($packet instanceof DisconnectPacket) {
+            if (isset($this->oldPlayers[$player->getName()])) unset($this->oldPlayers[$player->getName()]);
+            self::$protocolPlayers = $this->oldplayers;
+            return;
         }
 
         if (!isset($this->oldplayers[$player->getName()])) {
@@ -151,7 +155,7 @@ class PacketManager {
             $protocol = $this->oldplayers[$player->getName()];
             $protocol = $this->registered[$protocol];
             $pkN = $protocol->getPacketName($nId);
-            $protocol->changePacket($pkN, $packet, 'RECEIVE');
+            $protocol->changePacket($pkN, $packet, $player, 'RECEIVE');
         }
     }
 
@@ -185,7 +189,7 @@ class PacketManager {
             $protocol = $this->oldplayers[$player->getName()];
             $protocol = $this->registered[$protocol];
             $pkN = $protocol->getPacketName($nId);
-            $success = $protocol->changePacket($pkN, $packet, 'SENT');
+            $success = $protocol->changePacket($pkN, $packet, $player, 'SENT');
             if ($success === null) {
                 $this->plugin->getLogger()->critical("Tried to send an unknown packet[$nId] to player: {$player->getName()}");
 

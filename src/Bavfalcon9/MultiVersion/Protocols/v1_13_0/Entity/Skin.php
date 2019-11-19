@@ -96,10 +96,11 @@ class Skin{
         $capeData = SerializedImage::fromLegacy($skin->getCapeData());
         $geometryData = $skin->getGeometryData();
         $geometryName = $skin->getGeometryName();
+        $legacyPatch = Skin::convertLegacyGeometryName('MultiVersion_v1.0.0');
 
         return new Skin(
             $skinId,
-            'MultiVersion_v1.0.0',
+            $legacyPatch,
             $skinData,
             [],
             $capeData,

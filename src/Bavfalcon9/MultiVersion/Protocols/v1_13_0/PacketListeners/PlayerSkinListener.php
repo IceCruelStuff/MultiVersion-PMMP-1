@@ -52,13 +52,22 @@ class PlayerSkinListener extends PacketListener {
         $newBatch = new BatchPacket();
         foreach($packet->getPackets() as $buf){
             $pk = PacketPool::getPacket($buf);
+            $txt = ($this->inBound) ? "INBOUND" : "OUT BOUND";
+            echo $txt . "\n\n\n";
             if($pk instanceof PMPlayerList) {
-                $newPacket = new PlayerListPacket;
-                $newPacket->setBuffer($pk->buffer, $pk->offset);
-                $newPacket->decode();
-                #$newPacket->updateEntries();
-                $pk = $newPacket;#$newPacket->translateCustomPacket($pk);
-                $pk->encode();
+                if ($this->inBound) {
+                    $newPacket = new PlayerListPacket;
+                    $newPacket->setBuffer($pk->buffer, $pk->offset);
+                    $newPacket->decode();
+                    $pk = $newPacket;
+                    $pk->encode();
+                } else {
+                    $pk->decode();
+                    $newPacket = new PlayerListPacket;
+                    $newPacket->translateCustomPacket($pk);
+                    $pk = $newPacket;
+                    $pk->encode();
+                }
             } else {
                 $pk->decode();
                 $pk->encode();

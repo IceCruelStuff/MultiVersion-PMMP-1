@@ -128,11 +128,12 @@ class ProtocolVersion {
     /**
      * @param String $name
      * @param mixed  $oldPacket
+     * @param Player $player - Note this may vary based on protocol which is why it's not data typed.
      * @param String $type
      *
      * @return mixed
      */
-    public function changePacket(String $name, &$oldPacket, String $type = 'SENT') {
+    public function changePacket(String $name, &$oldPacket, $player, String $type = 'SENT') {
         $modified = false;
         foreach ($this->packetListeners as $listener) {
             if ($listener->getPacketName() === $oldPacket->getName() && $oldPacket::NETWORK_ID === $listener->getPacketNetworkID()) {
@@ -140,6 +141,7 @@ class ProtocolVersion {
                 if (!$success) {
                     continue;
                 } else {
+                    $listener->inBound = ($type === 'SENT') ? false : true;
                     $listener->onPacketMatch($oldPacket);
                     $modified = true;
                     continue;

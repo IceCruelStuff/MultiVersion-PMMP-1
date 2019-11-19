@@ -19,13 +19,14 @@ namespace Bavfalcon9\MultiVersion\Utils;
 abstract class PacketListener {
     /** @var int */
     private static $listeners = 0;
-
     /** @var Int */
     private $networkId;
     /** @var Int */
     private $registered;
     /** @var String */
     private $packetName;
+    /** @var Bool */
+    public $inBound;
 
     public function __construct(String $packetName, Int $networkId) {
         self::$listeners++;
