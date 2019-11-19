@@ -73,7 +73,6 @@ class PlayerSkinListener extends PacketListener {
 
             $newBatch->addPacket($pk);
         }
-
         $packet = $newBatch;
     }
 }
