@@ -16,12 +16,12 @@ declare(strict_types=1);
 
 namespace Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets;
 
-use Bavfalcon9\MultiVersion\Utils\CustomTranslator;
+use Bavfalcon9\MultiVersion\Utils\BatchCheck;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\types\RuntimeBlockMapping;
 use pocketmine\network\mcpe\protocol\types\RuntimeBlockMapping as PMRuntimeBlockMapping;
 use pocketmine\network\mcpe\protocol\UpdateBlockPacket as PMUpdateBlock;
 
-class UpdateBlockPacket implements CustomTranslator{
+class UpdateBlockPacket extends BatchCheck {
 
     /**
      * @param PMUpdateBlock $packet
@@ -33,5 +33,11 @@ class UpdateBlockPacket implements CustomTranslator{
         $packet->blockRuntimeId = RuntimeBlockMapping::toStaticRuntimeId($id, $meta);
 
         return $packet;
+    }
+
+    public function onPacketMatch(&$packet) : Void {
+        $packet->decode();
+        $packet = $this->translateCustomPacket($packet);
+        $packet->encode();
     }
 }
