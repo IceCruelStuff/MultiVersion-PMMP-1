@@ -70,21 +70,15 @@ class EventManager implements Listener {
             PacketPool::registerPacket(new TickSyncPacket());
             PacketPool::registerPacket(new RespawnPacket());
             $newVersion->setProtocolPackets([
+                "AddActorPacket" => 0x0d,
                 "LoginPacket" => 0x01,
-                "StartGamePacket" => 0x0b,
                 "PlayerListPacket" => 0x3f,
                 "PlayerSkinPacket" => 0x5d,
-                "UpdateBlockPacket" => 0x15,
-                "RespawnPacket" => 0x2d
+                "RespawnPacket" => 0x2d,
+                "StartGamePacket" => 0x0b,
+                "UpdateBlockPacket" => 0x15
             ]);
-            /*
-            $newVersion->setListeners([
-                "UpdateBlockListener",
-                "LevelEventListener",
-                "PlayerSkinListener",
-                "AddActorListener",
-                "LevelSoundEventListener"
-            ]);*/
+            $newVersion->setListeners([]);
             $newVersion = $this->packetManager->registerProtocol($newVersion);
             define("MULTIVERSION_v1_13_0", $this->plugin->getDataFolder()."v1_13_0");
             if (!$newVersion) {
