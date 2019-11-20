@@ -77,13 +77,14 @@ class EventManager implements Listener {
                 "UpdateBlockPacket" => 0x15,
                 "RespawnPacket" => 0x2d
             ]);
+            /*
             $newVersion->setListeners([
                 "UpdateBlockListener",
                 "LevelEventListener",
                 "PlayerSkinListener",
                 "AddActorListener",
                 "LevelSoundEventListener"
-            ]);
+            ]);*/
             $newVersion = $this->packetManager->registerProtocol($newVersion);
             define("MULTIVERSION_v1_13_0", $this->plugin->getDataFolder()."v1_13_0");
             if (!$newVersion) {

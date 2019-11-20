@@ -111,6 +111,20 @@ class ProtocolVersion {
     }
 
     /**
+     * @return String
+     */
+    public function getDir(): String {
+        return $this->dir;
+    }
+
+    /**
+     * @return String
+     */
+    public function getDirPath(): String {
+        return $this->dirPath;
+    }
+
+    /**
      * @param Float $id
      *
      * @return String
@@ -123,82 +137,6 @@ class ProtocolVersion {
         }
 
         return "$id";
-    }
-
-    /**
-     * @param String $name
-     * @param mixed  $oldPacket
-     * @param Player $player - Note this may vary based on protocol which is why it's not data typed.
-     * @param String $type
-     *
-     * @return mixed
-     */
-    public function changePacket(String $name, &$oldPacket, $player, String $type = 'SENT') {
-        $modified = false;
-        foreach ($this->packetListeners as $listener) {
-            if ($listener->getPacketName() === $oldPacket->getName() && $oldPacket::NETWORK_ID === $listener->getPacketNetworkID()) {
-                $success = $listener->onPacketCheck($oldPacket);
-                if (!$success) {
-                    continue;
-                } else {
-                    $listener->inBound = ($type === 'SENT') ? false : true;
-                    $listener->onPacketMatch($oldPacket);
-                    $modified = true;
-                    continue;
-                }
-            }
-        }
-
-        if ($modified) {
-            return $oldPacket;
-        }
-
-        if (!isset($this->protocolPackets[$name]) && $this->restricted) {
-            return null;
-        }
-
-        if (!isset($this->protocolPackets[$name])) {
-            if (self::DEVELOPER) {
-                MainLogger::getLogger()->info("§c[MultiVersion] DEBUG:§e Packet §8[§f {$oldPacket->getName()} §8| §f".$oldPacket::NETWORK_ID."§8]§e requested a change but no change supported §a{$type}§e.");
-            }
-
-            return $oldPacket;
-        }
-
-        $pk = $this->dir . $name;
-        $pk = new $pk;
-        $pk->setBuffer($oldPacket->buffer, $oldPacket->offset);
-
-        if (!$oldPacket instanceof DataPacket) {
-            if (self::DEVELOPER) {
-                MainLogger::getLogger()->info("§8[MultiVersion]: Packet change requested on non DataPacket typing. {$oldPacket->getName()} | " . $oldPacket::NETWORK_ID);
-            }
-        }
-
-        if ($pk instanceof CustomTranslator) {
-            $pk = $pk->translateCustomPacket($oldPacket);
-        }
-
-        $oldPacket = $pk;
-        
-        if (self::DEVELOPER) {
-            MainLogger::getLogger()->info("§6[MultiVersion] DEBUG: Modified Packet §8[§f {$oldPacket->getName()} §8| §f".$oldPacket::NETWORK_ID."§8]§6 §a{$type}§6.");
-        }
-
-        return $oldPacket;
-    }
-
-    public function translateLogin($packet) {
-        if (!isset($this->protocolPackets['LoginPacket'])) {
-            return $packet;
-        } else {
-            $pk = $this->dir . 'LoginPacket';
-            $pk = new $pk;
-            $pk->translateLogin($packet);
-            $pk->setBuffer($packet->buffer, $packet->offset);
-
-            return $pk;
-        }
     }
 
     public function registerListeners() {

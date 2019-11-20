@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets;
 
+use Bavfalcon9\Bavfalcon9\MultiVersion\Utils\BatchCheck;
 use Bavfalcon9\MultiVersion\Utils\PacketManager;
 use Bavfalcon9\MultiVersion\Utils\ProtocolVersion;
 use Bavfalcon9\MultiVersion\Utils\CustomTranslator;
@@ -32,7 +33,7 @@ use pocketmine\network\mcpe\protocol\PlayerListPacket as PMListPacket;
 use pocketmine\utils\MainLogger;
 use function count;
 
-class PlayerListPacket extends DataPacket implements CustomTranslator {
+class PlayerListPacket extends BatchCheck {
 
     public const NETWORK_ID = ProtocolInfo::PLAYER_LIST_PACKET;
     public const TYPE_ADD = 0;
@@ -210,5 +211,24 @@ class PlayerListPacket extends DataPacket implements CustomTranslator {
         }
 
         return $this;
+    }
+
+
+    public function onPacketMatch(&$packet): Void {
+        if ($this->inBound) {
+            $newPacket = new PlayerListPacket;
+            $newPacket->setBuffer($pk->buffer, $pk->offset);
+            $newPacket->decode();
+            $pk = $newPacket;
+            $pk->encode();
+            $packet = $pk;
+        } else {
+            $pk->decode();
+            $newPacket = new PlayerListPacket;
+            $newPacket->translateCustomPacket($pk);
+            $pk = $newPacket;
+            $pk->encode();
+            $packet = $pk;
+        }
     }
 }
