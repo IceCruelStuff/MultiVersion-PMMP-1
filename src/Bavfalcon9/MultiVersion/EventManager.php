@@ -71,6 +71,8 @@ class EventManager implements Listener {
             PacketPool::registerPacket(new RespawnPacket());
             $newVersion->setProtocolPackets([
                 "AddActorPacket" => 0x0d,
+                "LevelEventPacket" => 0x19,
+                "LevelSoundEventPacket" => 0x18,
                 "LoginPacket" => 0x01,
                 "PlayerListPacket" => 0x3f,
                 "PlayerSkinPacket" => 0x5d,
