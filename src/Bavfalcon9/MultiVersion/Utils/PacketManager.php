@@ -223,16 +223,29 @@ class PacketManager {
                     $name = $pk->getName();
 
                     if (!isset($packets[$name])) {
+                        $pk->decode();
                         $newBatch->addPacket($pk);
                         continue;
                     } else {
                         $newpacket = $protocol->getDir() . $name;
                         $newpacket = new $pk;
-                        $newpacket->inBound = false;
                         if (!$newpacket instanceof BatchCheck) {
+                            if ($packet instanceof RespawnPacket){
+                                return;
+                            }
+                            $pk->decode();
+                            $protocol = $this->oldplayers[$player->getName()];
+                            $protocol = $this->registered[$protocol];
+                            $pkN = $protocol->getPacketName($nId);
+                            $success = $this->changePacket($protocol, $pkN, $pk, $player, 'SENT');
+                            if ($success === null) {
+                                $this->plugin->getLogger()->critical("Tried to send an unknown packet[$nId] to player: {$player->getName()}");
+
+                                return;
+                            }
                             $newBatch->addPacket($pk);
-                            continue;
                         } else {
+                            $newpacket->inBound = false;
                             $pk = $newpacket->onPacketMatch($pk);
                             $newBatch->addPacket($pk);
                             continue;

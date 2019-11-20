@@ -18,7 +18,7 @@ namespace Bavfalcon9\MultiVersion\Utils;
 
 use pocketmine\network\mcpe\protocol\DataPacket;
 
-abstract class BatchCheck {
+abstract class BatchCheck extends DataPacket {
     public $inBound = false;
 
     abstract public function onPacketMatch(&$packet): void;
