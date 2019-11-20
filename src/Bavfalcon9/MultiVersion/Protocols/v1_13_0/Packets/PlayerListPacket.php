@@ -220,11 +220,13 @@ class PlayerListPacket extends BatchCheck implements CustomTranslator {
             $newPacket->setBuffer($packet->buffer, $packet->offset);
             $newPacket->decode();
             $packet = $newPacket;
+            $newPacket->encode();
         /*} else {
             $packet->decode();
             $newPacket = new PlayerListPacket;
             $newPacket = $newPacket->translateCustomPacket($packet);
             $packet = $newPacket;
+            $packet->encode();
         }*/
     }
 }

@@ -38,5 +38,6 @@ class UpdateBlockPacket extends BatchCheck {
     public function onPacketMatch(&$packet) : Void {
         $packet->decode();
         $packet = $this->translateCustomPacket($packet);
+        $packet->encode();
     }
 }

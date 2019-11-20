@@ -163,10 +163,12 @@ class PacketManager {
                     $newpacket = new $newpacket;
                     $newpacket->inBound = true;
                     if (!$newpacket instanceof BatchCheck) {
+                        $pk->decode();
+                        $pk->encode();
                         $newBatch->addPacket($pk);
                         continue;
                     } else {
-                        $pk = $newpacket->onPacketMatch($pk);
+                        $newpacket->onPacketMatch($pk);
                         $pk = $newpacket;
                         $newBatch->addPacket($pk);
                         continue;
@@ -225,6 +227,7 @@ class PacketManager {
 
                     if (!isset($packets[$name])) {
                         $pk->decode();
+                        $pk->encode();
                         $newBatch->addPacket($pk);
                         continue;
                     } else {
@@ -244,11 +247,13 @@ class PacketManager {
 
                                 return;
                             }
+                            $pk->encode();
                             $newBatch->addPacket($pk);
                         } else {
                             $newpacket->inBound = false;
-                            $pk = $newpacket->onPacketMatch($pk);
+                            $newpacket->onPacketMatch($pk);
                             $pk = $newpacket;
+                            var_dump($pk);
                             $newBatch->addPacket($pk);
                             # $pk->encode();
                             continue;

@@ -34,5 +34,6 @@ class LevelSoundEventPacket extends BatchCheck {
             list($id, $meta) = PMRuntimeBlockMapping::fromStaticRuntimeId($packet->extraData);
             $packet->extraData = RuntimeBlockMapping::toStaticRuntimeId($id, $meta);
         }
+        $packet->encode();
     }
 }
