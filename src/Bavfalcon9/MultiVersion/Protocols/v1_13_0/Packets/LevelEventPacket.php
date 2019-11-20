@@ -34,6 +34,5 @@ class LevelEventPacket extends BatchCheck {
             list($id, $meta) = PMRuntimeBlockMapping::fromStaticRuntimeId($packet->data);
             $packet->data = RuntimeBlockMapping::toStaticRuntimeId($id, $meta);
         }
-        $packet->encode();
     }
 }

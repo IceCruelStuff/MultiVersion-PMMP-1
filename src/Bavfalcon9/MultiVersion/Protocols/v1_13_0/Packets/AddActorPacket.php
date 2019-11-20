@@ -32,6 +32,5 @@ class AddActorPacket extends BatchCheck {
                 list($id, $meta) = PMRuntimeBlockMapping::fromStaticRuntimeId($packet->metadata[Entity::DATA_VARIANT][1]);
                 $packet->metadata[Entity::DATA_VARIANT][1] = RuntimeBlockMapping::toStaticRuntimeId($id, $meta);
             }
-        $packet->encode();
     }
 }

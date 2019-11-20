@@ -215,20 +215,16 @@ class PlayerListPacket extends BatchCheck implements CustomTranslator {
 
 
     public function onPacketMatch(&$packet): Void {
-        if ($this->inBound) {
+        //if ($this->inBound) {
             $newPacket = new PlayerListPacket;
-            $newPacket->setBuffer($pk->buffer, $pk->offset);
+            $newPacket->setBuffer($packet->buffer, $packet->offset);
             $newPacket->decode();
-            $pk = $newPacket;
-            $pk->encode();
-            $packet = $pk;
-        } else {
+            $packet = $newPacket;
+        /*} else {
             $packet->decode();
             $newPacket = new PlayerListPacket;
-            $newPacket->translateCustomPacket($pk);
-            $pk = $newPacket;
-            $pk->encode();
-            $packet = $pk;
-        }
+            $newPacket = $newPacket->translateCustomPacket($packet);
+            $packet = $newPacket;
+        }*/
     }
 }

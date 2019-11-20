@@ -160,13 +160,14 @@ class PacketManager {
                     continue;
                 } else {
                     $newpacket = $protocol->getDir() . $name;
-                    $newpacket = new $pk;
+                    $newpacket = new $newpacket;
                     $newpacket->inBound = true;
                     if (!$newpacket instanceof BatchCheck) {
                         $newBatch->addPacket($pk);
                         continue;
                     } else {
                         $pk = $newpacket->onPacketMatch($pk);
+                        $pk = $newpacket;
                         $newBatch->addPacket($pk);
                         continue;
                     }
@@ -228,7 +229,7 @@ class PacketManager {
                         continue;
                     } else {
                         $newpacket = $protocol->getDir() . $name;
-                        $newpacket = new $pk;
+                        $newpacket = new $newpacket;
                         if (!$newpacket instanceof BatchCheck) {
                             if ($packet instanceof RespawnPacket){
                                 return;
@@ -247,7 +248,9 @@ class PacketManager {
                         } else {
                             $newpacket->inBound = false;
                             $pk = $newpacket->onPacketMatch($pk);
+                            $pk = $newpacket;
                             $newBatch->addPacket($pk);
+                            # $pk->encode();
                             continue;
                         }
                     }
