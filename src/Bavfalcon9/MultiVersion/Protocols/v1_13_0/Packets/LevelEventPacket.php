@@ -17,21 +17,23 @@ declare(strict_types=1);
 namespace Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets;
 
 use Bavfalcon9\MultiVersion\Utils\BatchCheck;
+use Bavfalcon9\MultiVersion\Protocols\v1_13_0\types\RuntimeBlockMapping;
 use pocketmine\network\mcpe\protocol\DataPacket;
+use pocketmine\network\mcpe\protocol\LevelEventPacket as PMLevelEvent;
 use pocketmine\network\mcpe\protocol\types\RuntimeBlockMapping as PMRuntimeBlockMapping;
 
-class AddActorPacket extends BatchCheck {
+class LevelEventPacket extends BatchCheck {
     /**
-     * @param AddActorPacket $packet
+     * @param LevelEventPacket $packet
      *
      * @return void
      */
     public function onPacketMatch(&$packet) : Void {
         $packet->decode();
-            if ($packet->type === Entity::FALLING_BLOCK) {
-                list($id, $meta) = PMRuntimeBlockMapping::fromStaticRuntimeId($packet->metadata[Entity::DATA_VARIANT][1]);
-                $packet->metadata[Entity::DATA_VARIANT][1] = RuntimeBlockMapping::toStaticRuntimeId($id, $meta);
-            }
+        if ($packet->evid === PMLevelEvent::EVENT_PARTICLE_DESTROY) {
+            list($id, $meta) = PMRuntimeBlockMapping::fromStaticRuntimeId($packet->data);
+            $packet->data = RuntimeBlockMapping::toStaticRuntimeId($id, $meta);
+        }
         $packet->encode();
     }
 }
