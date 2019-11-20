@@ -149,7 +149,7 @@ class PacketManager {
 
         if ($packet instanceof BatchPacket) {
             $newBatch = new BatchPacket();
-            $protocol = $this->registered[$protocol];
+            $protocol = $this->registered[$this->oldplayers[$player->getName()]];
             $packets = $protocol->getProtocolPackets();
             foreach ($packet->getPackets() as $buf) {
                 $pk = PacketPool::getPacket($buf);
@@ -216,7 +216,7 @@ class PacketManager {
 
             if ($packet instanceof BatchPacket) {
                 $newBatch = new BatchPacket();
-                $protocol = $this->registered[$protocol];
+                $protocol = $this->registered[$this->oldplayers[$player->getName()]];
                 $packets = $protocol->getProtocolPackets();
                 foreach ($packet->getPackets() as $buf) {
                     $pk = PacketPool::getPacket($buf);
@@ -282,7 +282,7 @@ class PacketManager {
      * @return mixed
      */
     private function changePacket(ProtocolVersion $protocol, String $name, &$oldPacket, $player, String $type = 'SENT') {
-        foreach ($protocol->packetListeners as $listener) {
+        foreach ($protocol->getPacketListeners() as $listener) {
             if ($listener->getPacketName() === $oldPacket->getName() && $oldPacket::NETWORK_ID === $listener->getPacketNetworkID()) {
                 $success = $listener->onPacketCheck($oldPacket);
                 if (!$success) {
@@ -296,12 +296,12 @@ class PacketManager {
             }
         }
 
-        if (!isset($protocol->protocolPackets[$name]) && $protocol->restricted) {
+        if (!isset($protocol->getProtocolPackets()[$name]) && $protocol->getRestricted()) {
             return null;
         }
 
-        if (!isset($protocol->protocolPackets[$name])) {
-            if (self::DEVELOPER) {
+        if (!isset($protocol->getProtocolPackets()[$name])) {
+            if ($protocol::DEVELOPER) {
                 MainLogger::getLogger()->info("§c[MultiVersion] DEBUG:§e Packet §8[§f {$oldPacket->getName()} §8| §f".$oldPacket::NETWORK_ID."§8]§e requested a change but no change supported §a{$type}§e.");
             }
 
@@ -313,7 +313,7 @@ class PacketManager {
         $pk->setBuffer($oldPacket->buffer, $oldPacket->offset);
 
         if (!$oldPacket instanceof DataPacket) {
-            if (self::DEVELOPER) {
+            if ($protocol::DEVELOPER) {
                 MainLogger::getLogger()->info("§8[MultiVersion]: Packet change requested on non DataPacket typing. {$oldPacket->getName()} | " . $oldPacket::NETWORK_ID);
             }
         }
@@ -324,7 +324,7 @@ class PacketManager {
 
         $oldPacket = $pk;
         
-        if (self::DEVELOPER) {
+        if ($protocol::DEVELOPER) {
             MainLogger::getLogger()->info("§6[MultiVersion] DEBUG: Modified Packet §8[§f {$oldPacket->getName()} §8| §f".$oldPacket::NETWORK_ID."§8]§6 §a{$type}§6.");
         }
 

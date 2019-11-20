@@ -90,6 +90,14 @@ class ProtocolVersion {
     }
 
     /**
+     * @return Array[PacketListener]
+     */
+
+    public function getPacketListeners(): Array {
+        return $this->packetListeners;
+    }
+
+    /**
      * @return int
      */
     public function getProtocol(): int {
@@ -137,6 +145,13 @@ class ProtocolVersion {
         }
 
         return "$id";
+    }
+
+    /**
+     * @return Bool
+     */
+    public function getRestricted(): Bool {
+        return $this->restricted;
     }
 
     public function registerListeners() {
