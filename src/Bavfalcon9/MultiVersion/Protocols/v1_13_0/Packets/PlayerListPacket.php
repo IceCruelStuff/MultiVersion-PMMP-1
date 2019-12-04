@@ -31,9 +31,10 @@ use pocketmine\network\mcpe\protocol\types\PlayerListEntry as PMListEntry;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\PlayerListPacket as PMListPacket;
 use pocketmine\utils\MainLogger;
+use pocketmine\Server;
 use function count;
 
-class PlayerListPacket extends BatchCheck implements CustomTranslator {
+class PlayerListPacket extends DataPacket implements BatchCheck, CustomTranslator{
 
     public const NETWORK_ID = ProtocolInfo::PLAYER_LIST_PACKET;
     public const TYPE_ADD = 0;
@@ -43,6 +44,9 @@ class PlayerListPacket extends BatchCheck implements CustomTranslator {
     public $entries = [];
     /** @var int */
     public $type;
+    /** @var bool */
+    public $inBound = false;
+    private $mode = false;
 
     public function clean() {
         $this->entries = [];
@@ -59,14 +63,17 @@ class PlayerListPacket extends BatchCheck implements CustomTranslator {
                 $entry->entityUniqueId = $this->getEntityUniqueId();
                 $entry->username = $this->getString();
 
-                // Assuming they're 1.13 because they are in the array
-                if (isset(PacketManager::$protocolPlayers[$entry->username])) {
-                    if (PacketManager::$protocolPlayers[$entry->username] !== ProtocolVersion::VERSIONS['1.13.0']) throw new \Exception('1.13 version called but unsupported version given.');
-                    $skinId = $this->getString();
-                    $skinData = $this->getString();
-                    $capeData = $this->getString();
-                    $geometryName = $this->getString();
-				    $geometryData = $this->getString();
+                // Assuming they're 1.12 or older because they aren't in the array
+                if (!isset(PacketManager::$protocolPlayers[$entry->username])) {
+                    /* THIS IS HACKY */
+                    $cached = Server::getInstance()->getPlayer($entry->username);
+                    var_dump($cached);
+                    $cached = (!$cached) ? NULL : $cached->getSkin();
+                    $skinId = ($cached !== NULL) ? $cached->getSkinId() : $this->getString();
+                    $skinData = ($cached !== NULL) ? $cached->getSkinData() : $this->getString();
+                    $capeData = ($cached !== NULL) ? $cached->getCapeData() : $this->getString();
+                    $geometryName = ($cached !== NULL) ? $cached->getGeometryName() : $this->getString();
+				    $geometryData = ($cached !== NULL) ? $cached->getGeometryData() : $this->getString();
                     $entry->skin = new PMSkin(
                         $skinId,
                         $skinData,
@@ -76,11 +83,12 @@ class PlayerListPacket extends BatchCheck implements CustomTranslator {
                     );
                     $entry->xboxUserId = $this->getString();
                     $entry->platformChatId = $this->getString();
-                    $entry->skin = Skin::convertFromLegacySkin($entry->skin);
+                    $entry->skin = (!$cached) ? Skin::null() : Skin::convertFromLegacySkin($cached);
                     $entry->buildPlatform = -1;
                     $entry->isTeacher = false;
                     $entry->isHost = false;
                 } else {
+                    if (PacketManager::$protocolPlayers[$entry->username] !== ProtocolVersion::VERSIONS['1.13.0']) throw new \Exception('Not sure what to do here');
                     $entry->xboxUserId = $this->getString();
                     $entry->platformChatId = $this->getString();
                     $entry->buildPlatform = $this->getLInt();
@@ -91,12 +99,12 @@ class PlayerListPacket extends BatchCheck implements CustomTranslator {
             } else {
                 $entry->uuid = $this->getUUID();
             }
-            var_dump($entry);
             $this->entries[$i] = $entry;
         }
     }
 
     protected function encodePayload() {
+        if (!$this->type) $this->type = self::TYPE_ADD;
         $this->putByte($this->type);
         $this->putUnsignedVarInt(count($this->entries));
         foreach($this->entries as $entry){
@@ -216,20 +224,11 @@ class PlayerListPacket extends BatchCheck implements CustomTranslator {
 
 
     public function onPacketMatch(&$packet): Void {
-        var_dump($this->inBound);
-        if ($this->inBound) {
-            // afaik these are handled by the server anyway
+        if ($packet instanceof PMListPacket) {
             $newPacket = new PlayerListPacket;
             $newPacket->setBuffer($packet->buffer, $packet->offset);
-            $newPacket->decode();
-            $packet = $newPacket;
-            $newPacket->encode();
-        } else {
-            $packet->decode();
-            $newPacket = new PlayerListPacket;
-            $newPacket = $newPacket->translateCustomPacket($packet);
-            $packet = $newPacket;
-            $packet->encode();
+            $newPacket->decode(); // decodes packet
+            $newPacket->encode(); 
         }
     }
 }

@@ -135,7 +135,6 @@ class PacketManager {
             $pk->state = RespawnPacket::STATE_READY_TO_SPAWN;
             $pk->entityRuntimeId = $player->getId();
             $player->dataPacket($pk);
-
             return;
         } else if ($packet instanceof DisconnectPacket) {
             if (isset($this->oldPlayers[$player->getName()])) unset($this->oldPlayers[$player->getName()]);
@@ -156,6 +155,8 @@ class PacketManager {
                 $name = $pk->getName();
 
                 if (!isset($packets[$name])) {
+                    $pk->decode();
+                    $pk->encode();
                     $newBatch->addPacket($pk);
                     continue;
                 } else {
@@ -168,9 +169,8 @@ class PacketManager {
                         continue;
                     } else {
                         $newpacket->inBound = true;
-                        $newpacket->onPacketMatch($pk);
-                        $pk = $newpacket;
-                        $newBatch->addPacket($pk);
+                        $newpacket->onPacketMatch($pk); // passed by reference
+                        $newBatch->addPacket($newpacket);
                         continue;
                     }
                 }
@@ -253,7 +253,7 @@ class PacketManager {
                             $newpacket->inBound = false;
                             $newpacket->onPacketMatch($pk);
                             $pk = $newpacket;
-                            $newBatch->addPacket($pk);
+                            $newBatch->addPacket($newpacket);
                             continue;
                         }
                     }

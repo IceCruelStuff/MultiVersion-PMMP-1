@@ -22,7 +22,8 @@ use pocketmine\network\mcpe\protocol\DataPacket;
 use pocketmine\network\mcpe\protocol\LevelSoundEventPacket as PMLevelSoundEvent;
 use pocketmine\network\mcpe\protocol\types\RuntimeBlockMapping as PMRuntimeBlockMapping;
 
-class LevelSoundEventPacket extends BatchCheck {
+class LevelSoundEventPacket extends DataPacket implements BatchCheck {
+    public $inBound = false;
     /**
      * @param PMLevelSoundEvent $packet
      *

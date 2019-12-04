@@ -22,7 +22,8 @@ use pocketmine\network\mcpe\protocol\DataPacket;
 use pocketmine\network\mcpe\protocol\LevelEventPacket as PMLevelEvent;
 use pocketmine\network\mcpe\protocol\types\RuntimeBlockMapping as PMRuntimeBlockMapping;
 
-class LevelEventPacket extends BatchCheck {
+class LevelEventPacket extends DataPacket implements BatchCheck {
+    public $inBound = false;
     /**
      * @param LevelEventPacket $packet
      *

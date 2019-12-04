@@ -20,7 +20,8 @@ use Bavfalcon9\MultiVersion\Utils\BatchCheck;
 use pocketmine\network\mcpe\protocol\DataPacket;
 use pocketmine\network\mcpe\protocol\types\RuntimeBlockMapping as PMRuntimeBlockMapping;
 
-class AddActorPacket extends BatchCheck {
+class AddActorPacket extends DataPacket implements BatchCheck {
+    public $inBound = false;
     /**
      * @param AddActorPacket $packet
      *
