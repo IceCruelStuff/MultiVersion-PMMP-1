@@ -39,6 +39,6 @@ class TickSyncPacket extends DataPacket{
     }
 
     public function handle(NetworkSession $session) : bool{
-        // TODO: Implement handle() method.
+        return false;
     }
 }

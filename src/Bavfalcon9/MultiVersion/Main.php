@@ -29,26 +29,27 @@ class Main extends PluginBase {
             $this->getLogger()->critical("Server version:". ProtocolInfo::MINECRAFT_VERSION_NETWORK . "not supported by multiversion.");
             $this->getServer()->getPluginManager()->disablePlugin($this);
         }
+
         define('MultiVersionFile', $this->getFile());
         $this->getServer()->getPluginManager()->registerEvents(new EventManager($this), $this);
         $this->saveAllResources();
     }
 
-    private function saveAllResources() {
+    private function saveAllResources(){
         $resourcePath = $this->getFile() . "resources";
         $versions = scandir($resourcePath);
-
         foreach ($versions as $version) {
             if ($version === '.' || $version === '..') {
                 continue;
-            } else {
-                $files = scandir($resourcePath . "/" . $version);
-                foreach ($files as $file) {
-                    if ($file === '.' || $file === '..') {
-                        continue;
-                    }
-                    $this->saveResource($version . "/" . $file);
+            }
+
+            $files = scandir($resourcePath . "/" . $version);
+            foreach ($files as $file) {
+                if ($file === '.' || $file === '..') {
+                    continue;
                 }
+
+                $this->saveResource($version . "/" . $file);
             }
         }
     }

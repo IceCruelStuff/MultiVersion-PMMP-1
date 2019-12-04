@@ -21,6 +21,7 @@ use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets\TickSyncPacket;
 use Bavfalcon9\MultiVersion\Utils\PacketManager;
 use Bavfalcon9\MultiVersion\Utils\ProtocolVersion;
 use pocketmine\event\Listener;
+use pocketmine\network\mcpe\protocol\BatchPacket;
 use pocketmine\utils\MainLogger;
 use pocketmine\network\mcpe\protocol\PacketPool;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
@@ -50,40 +51,67 @@ class EventManager implements Listener {
      *
      * @return void
      */
-    public function onReceive(DataPacketReceiveEvent $event): void {
-        $this->packetManager->handlePacketReceive($event);
+    public function onReceive(DataPacketReceiveEvent $event): void{
+        $packet = $event->getPacket();
+        if(!$this->packetManager->handlePacketReceive($event->getPlayer(), $packet)){
+            $event->setCancelled();
+        }
     }
 
     /**
      * @param DataPacketSendEvent $event
      *
+     * @ignoreCancelled true
+     *
      * @return void
      */
     public function onSend(DataPacketSendEvent $event): void {
-        $this->packetManager->handlePacketSent($event);
+        $packet = $event->getPacket();
+        if ($packet instanceof BatchPacket) { // weird hack
+            /** @var BatchPacket $packet */
+            $newBatch = new BatchPacket();
+            foreach ($packet->getPackets() as $buf) {
+                $pk = PacketPool::getPacket($buf);
+                $pk->decode();
+
+                if (!$this->packetManager->handlePacketSent($event->getPlayer(), $pk)) {
+                    continue;
+                }
+
+                $pk->encode();
+                $newBatch->addPacket($pk);
+            }
+
+            $packet->encode();
+            $newBatch->encode();
+
+            $packet->setBuffer($newBatch->buffer, $newBatch->offset);
+
+            $packet->decode();
+
+            return;
+        }
+
+        if (!$this->packetManager->handlePacketSent($event->getPlayer(), $packet)) {
+            $event->setCancelled();
+        }
     }
 
     private function loadMultiVersion(): void {
         if (ProtocolInfo::MINECRAFT_VERSION_NETWORK === "1.12.0") {
             // 1.13 support on MCPE 1.12
-            $newVersion = new ProtocolVersion(ProtocolVersion::VERSIONS["1.13.0"], "1.13.0", false);
+            $newVersion = new ProtocolVersion(ProtocolVersion::VERSIONS["1.13.0"], "1.13.0");
             PacketPool::registerPacket(new TickSyncPacket());
             PacketPool::registerPacket(new RespawnPacket());
             $newVersion->setProtocolPackets([
-                "LoginPacket" => 0x01,
-                "StartGamePacket" => 0x0b,
-                "PlayerListPacket" => 0x3f,
-                "PlayerSkinPacket" => 0x5d,
-                "UpdateBlockPacket" => 0x15,
-                "RespawnPacket" => 0x2d
+                0x01 => "LoginPacket",
+                0x0b => "StartGamePacket",
+                0x3f => "PlayerListPacket",
+                0x5d => "PlayerSkinPacket",
+                0x15 => "UpdateBlockPacket",
+                0x2d => "RespawnPacket"
             ]);
-            $newVersion->setListeners([
-                "UpdateBlockListener",
-                "LevelEventListener",
-                "PlayerSkinListener",
-                "AddActorListener",
-                "LevelSoundEventListener"
-            ]);
+
             $newVersion = $this->packetManager->registerProtocol($newVersion);
             define("MULTIVERSION_v1_13_0", $this->plugin->getDataFolder()."v1_13_0");
             if (!$newVersion) {
@@ -95,16 +123,16 @@ class EventManager implements Listener {
 
         if (ProtocolInfo::MINECRAFT_VERSION_NETWORK === "1.13.0") {
             // 1.12 support on MCPE 1.13
-            $newVersion = new ProtocolVersion(ProtocolVersion::VERSIONS["1.12.0"], "1.12.0", false);
+            $newVersion = new ProtocolVersion(ProtocolVersion::VERSIONS["1.12.0"], "1.12.0");
             $newVersion->setProtocolPackets([
-                "LoginPacket" => 0x01,
-                "StartGamePacket" => 0x0b,
-                "RespawnPacket" => 0x2d,
-                "PlayerListPacket" => 0x3f,
-                "PlayerSkinPacket" => 0x5d,
-                "ExplodePacket" => 0x17,
-                "ResourcePackDataInfoPacket" => 0x52
+                0x01 => "LoginPacket",
+                0x0b => "StartGamePacket",
+                0x2d => "RespawnPacket",
+                0x3f => "PlayerListPacket",
+                0x5d => "PlayerSkinPacket",
+                0x17 => "ExplodePacket"
             ]);
+
             $newVersion = $this->packetManager->registerProtocol($newVersion);
             define("MULTIVERSION_v1_12_0", $this->plugin->getDataFolder()."v1_12_0");
             if (!$newVersion) {

@@ -258,18 +258,22 @@ class StartGamePacket extends DataPacket implements CustomTranslator{
                 //this is a really nasty hack, but it'll do for now
                 self::$blockTableCache = self::serializeBlockTable(RuntimeBlockMapping::getBedrockKnownStates());
             }
+
             $this->put(self::$blockTableCache);
         }else{
             $this->put(self::serializeBlockTable($this->blockTable));
         }
+
         if($this->itemTable === null){
             if(self::$itemTableCache === null){
                 self::$itemTableCache = self::serializeItemTable(json_decode(file_get_contents(MULTIVERSION_v1_13_0 . '/item_id_map.json'), true));
             }
+
             $this->put(self::$itemTableCache);
         }else{
             $this->put(self::serializeItemTable($this->itemTable));
         }
+
         $this->putString($this->multiplayerCorrelationId);
     }
 

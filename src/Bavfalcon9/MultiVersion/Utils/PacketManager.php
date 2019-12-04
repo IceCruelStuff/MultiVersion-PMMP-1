@@ -19,18 +19,12 @@ namespace Bavfalcon9\MultiVersion\Utils;
 use Bavfalcon9\MultiVersion\Main;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets\RespawnPacket;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets\TickSyncPacket;
+use function in_array;
 use pocketmine\Player;
-use pocketmine\network\mcpe\PlayerNetworkSessionAdapter;
 use pocketmine\network\mcpe\protocol\DataPacket;
 use pocketmine\network\mcpe\protocol\LoginPacket;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
-use pocketmine\network\mcpe\protocol\DisconnectPacket;
-use pocketmine\event\server\DataPacketReceiveEvent;
-use pocketmine\event\server\DataPacketSendEvent;
-use function array_push;
-use function array_search;
-use function array_splice;
-use function in_array;
+use function strtolower;
 
 class PacketManager {
     /** @var ProtocolVersion[] */
@@ -39,10 +33,6 @@ class PacketManager {
     private $plugin;
     /** @var string[] */
     private $oldplayers = [];
-    /** @var array */
-    private $queue = []; // Packet queue to prevent duplications
-    /** @var array */
-    public static $protocolPlayers = [];
 
     /**
      * PacketManager constructor.
@@ -81,51 +71,29 @@ class PacketManager {
     }
 
     /**
-     * @param DataPacketReceiveEvent $event
-     * @return void
+     * @param Player     $player
+     * @param DataPacket $packet
+     *
+     * @return bool
      */
-    public function handlePacketReceive(DataPacketReceiveEvent $event): void {
-        $packet = $event->getPacket();
-        $player = $event->getPlayer();
-        $nId = $packet::NETWORK_ID;
-        self::$protocolPlayers = $this->oldplayers;
-
+    public function handlePacketReceive(Player $player, DataPacket &$packet): bool{
         if ($packet instanceof LoginPacket) {
             $protocol = $packet->protocol;
-            if (isset($this->queue[$packet->username]) and in_array($nId, $this->queue[$packet->username])) {
-                $oldProto = $this->oldplayers[$packet->username];
-                $this->plugin->getLogger()->debug("§eUser: {$packet->username} [attempting to hack login for protocol: $oldProto]");
-                $pc = $this->registered[$oldProto];
-                $pc->translateLogin($packet);
-                array_splice($this->queue[$packet->username], array_search($nId, $this->queue[$packet->username]));
-            } else if ($protocol !== ProtocolInfo::CURRENT_PROTOCOL) {
+            $this->plugin->getLogger()->debug("§eUser: {$packet->username} [attempting to hack login for protocol: $protocol]");
+            if ($protocol !== ProtocolInfo::CURRENT_PROTOCOL) {
                 if (!isset($this->registered[$protocol])) {
-                    if (isset($this->queue[$packet->username])) {
-                        unset($this->queue[$packet->username]);
-                    }
-
-                    $this->plugin->getLogger()->critical("{$packet->username} tried to join with protocol: $protocol");
                     $player->close('', '§c[MultiVersion]: Your game version is not yet supported here. [$protocol]');
-                    $event->setCancelled();
                 } else {
-                    $this->plugin->getLogger()->debug("§e {$packet->username} joining with protocol: $protocol");
-                    $this->oldplayers[$packet->username] = $protocol;
-                    $this->queue[$packet->username] = [];
-                    array_push($this->queue[$packet->username], $nId);
+                    $this->plugin->getLogger()->debug("§e{$packet->username} joining with protocol: $protocol");
+                    $this->oldplayers[strtolower($packet->username)] = $protocol;
                     $pc = $this->registered[$protocol];
-                    $pkN = $pc->getPacketName($nId);
-                    $pc->changePacket($pkN, $packet, $player, 'RECEIVE');
-
-                    $this->handleOldReceived($packet, $player);
-                    $event->setCancelled();
+                    $pc->translateLogin($packet);
                 }
             }
 
-            return;
-        } else if ($packet instanceof TickSyncPacket){
-            $event->setCancelled();
-
-            return;
+            return true;
+        } else if ($packet instanceof TickSyncPacket) {
+            return false;
         } else if ($packet instanceof RespawnPacket) {
             $pk = new RespawnPacket();
             $pk->position = $packet->position;
@@ -133,81 +101,39 @@ class PacketManager {
             $pk->entityRuntimeId = $player->getId();
             $player->dataPacket($pk);
 
-            return;
-        } else if ($packet instanceof DisconnectPacket) {
-            if (isset($this->oldPlayers[$player->getName()])) unset($this->oldPlayers[$player->getName()]);
-            self::$protocolPlayers = $this->oldplayers;
-            return;
+            return false;
         }
 
-        if (!isset($this->oldplayers[$player->getName()])) {
-            return;
+        if (!isset($this->oldplayers[$player->getLowerCaseName()])) {
+            return true;
         }
 
-        if (!isset($this->queue[$player->getName()])) {
-            $this->queue[$player->getName()] = [];
-        }
+        $protocol = $this->oldplayers[$player->getLowerCaseName()];
+        $pv = $this->registered[$protocol];
+        $pv->changePacket($packet->getName(), $packet, 'RECEIVE');
 
-        if (isset($this->queue[$player->getName()]) and in_array($nId, $this->queue[$player->getName()])) {
-            array_splice($this->queue[$player->getName()], array_search($nId, $this->queue[$player->getName()]));
-        } else {
-            array_push($this->queue[$player->getName()], $nId);
-            $protocol = $this->oldplayers[$player->getName()];
-            $protocol = $this->registered[$protocol];
-            $pkN = $protocol->getPacketName($nId);
-            $protocol->changePacket($pkN, $packet, $player, 'RECEIVE');
-        }
+        return true;
     }
 
     /**
-     * @param DataPacketSendEvent $event
-     * @return void
-     */
-    public function handlePacketSent(DataPacketSendEvent $event): void {
-        $packet = $event->getPacket();
-        $player = $event->getPlayer();
-        $nId = $packet::NETWORK_ID;
-        if (!isset($this->oldplayers[$player->getName()])) {
-            return;
-        }
-
-        if (isset($this->queue[$player->getName()]) and in_array($nId, $this->queue[$player->getName()])) {
-            array_splice($this->queue[$player->getName()], array_search($nId, $this->queue[$player->getName()]));
-        } else {
-            if (!isset($this->queue[$player->getName()])) {
-                $this->queue[$player->getName()] = [];
-            }
-
-            if (!isset($this->oldplayers[$player->getName()])) {
-                return;
-            }
-
-            if ($packet instanceof RespawnPacket){
-                return;
-            }
-
-            $protocol = $this->oldplayers[$player->getName()];
-            $protocol = $this->registered[$protocol];
-            $pkN = $protocol->getPacketName($nId);
-            $success = $protocol->changePacket($pkN, $packet, $player, 'SENT');
-            if ($success === null) {
-                $this->plugin->getLogger()->critical("Tried to send an unknown packet[$nId] to player: {$player->getName()}");
-
-                return;
-            }
-
-            array_push($this->queue[$player->getName()], $nId);
-            $player->sendDataPacket($packet);
-            $event->setCancelled();
-        }
-    }
-
-    /**
-     * @param DataPacket $packet
      * @param Player     $player
+     * @param DataPacket $packet
+     *
+     * @return bool
      */
-    private function handleOldReceived(DataPacket $packet, Player $player) {
-        $adapter = new PlayerNetworkSessionAdapter($this->plugin->getServer(), $player);
-		$adapter->handleDataPacket($packet);
+    public function handlePacketSent(Player $player, DataPacket &$packet): bool{
+        if (!isset($this->oldplayers[$player->getLowerCaseName()])) {
+            return true;
+        }
+
+        if ($packet instanceof RespawnPacket) {
+            return true;
+        }
+
+        $protocol = $this->oldplayers[$player->getLowerCaseName()];
+        $pv = $this->registered[$protocol];
+        $pv->changePacket($packet->getName(), $packet, 'SENT');
+
+        return true;
     }
 }

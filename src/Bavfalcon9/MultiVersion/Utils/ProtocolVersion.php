@@ -22,7 +22,7 @@ use function explode;
 use function implode;
 
 class ProtocolVersion {
-    public const DEVELOPER = false; // set to true for debug
+    public const DEVELOPER = true; // set to true for debug
     public const VERSIONS = [
         '1.12.0' => 361,
         '1.13.0' => 388
@@ -32,32 +32,23 @@ class ProtocolVersion {
     private $protocol;
     /** @var array */
     private $protocolPackets = [];
-    /** @var bool */
-    private $restricted = false;
     /** @var string */
     private $dir = '';
     /** @var string */
     private $dirPath = '';
     /** @var string */
     private $minecraftVersion = '1.13.0';
-    /** @var array */
-    private $packetListeners = [];
 
     /**
      * @param int    $protocol
      * @param String $MCPE
-     * @param bool   $restrict
-     * @param array  $listeners
      */
-    public function __construct(int $protocol, String $MCPE, Bool $restrict = false, Array $listeners = []) {
+    public function __construct(int $protocol, String $MCPE) {
         $fixedMCPE = 'v'.implode('_', explode('.', $MCPE));
         $this->protocol = $protocol;
         $this->dirPath = "Bavfalcon9\\MultiVersion\\Protocols\\".$fixedMCPE."\\";
         $this->dir = $this->dirPath . "Packets\\";
-        $this->restricted = $restrict;
         $this->minecraftVersion = $MCPE;
-        $this->wantedListeners = $listeners;
-        $this->registerListeners();
     }
 
     /**
@@ -65,28 +56,6 @@ class ProtocolVersion {
      */
     public function setProtocolPackets(Array $packets) {
         $this->protocolPackets = $packets;
-    }
-
-    /**
-     * @param array $listeners
-     */
-    public function setListeners(Array $listeners) {
-        $this->wantedListeners = $listeners;
-        $this->registerListeners();
-    }
-
-    /**
-     * @param PacketListener $listener
-     *
-     * @return bool
-     */
-    public function addPacketListener(PacketListener $listener): Bool {
-        if (isset($this->packetListeners[$listener->getName()])) {
-            return false;
-        } else {
-            $this->packetListeners[$listener->getName()] = $listener;
-            return true;
-        }
     }
 
     /**
@@ -116,7 +85,7 @@ class ProtocolVersion {
      * @return String
      */
     public function getPacketName(Float $id): String {
-        foreach ($this->protocolPackets as $name => $pid) {
+        foreach ($this->protocolPackets as $pid => $name) {
             if ($id == $pid) {
                 return $name;
             }
@@ -126,86 +95,42 @@ class ProtocolVersion {
     }
 
     /**
-     * @param String $name
-     * @param mixed  $oldPacket
-     * @param Player $player - Note this may vary based on protocol which is why it's not data typed.
-     * @param String $type
+     * @param String     $name
+     * @param DataPacket &$packet
+     * @param String     $type
      *
-     * @return mixed
+     * @return void
      */
-    public function changePacket(String $name, &$oldPacket, $player, String $type = 'SENT') {
-        $modified = false;
-        foreach ($this->packetListeners as $listener) {
-            if ($listener->getPacketName() === $oldPacket->getName() && $oldPacket::NETWORK_ID === $listener->getPacketNetworkID()) {
-                $success = $listener->onPacketCheck($oldPacket);
-                if (!$success) {
-                    continue;
-                } else {
-                    $listener->inBound = ($type === 'SENT') ? false : true;
-                    $listener->onPacketMatch($oldPacket);
-                    $modified = true;
-                    continue;
-                }
-            }
-        }
-
-        if ($modified) {
-            return $oldPacket;
-        }
-
-        if (!isset($this->protocolPackets[$name]) && $this->restricted) {
-            return null;
-        }
-
-        if (!isset($this->protocolPackets[$name])) {
+    public function changePacket(String $name, DataPacket &$packet, String $type = 'SENT'): void {
+        if (!isset($this->protocolPackets[$packet->pid()])) {
             if (self::DEVELOPER) {
-                MainLogger::getLogger()->info("§c[MultiVersion] DEBUG:§e Packet §8[§f {$oldPacket->getName()} §8| §f".$oldPacket::NETWORK_ID."§8]§e requested a change but no change supported §a{$type}§e.");
+                MainLogger::getLogger()->info("§c[MultiVersion] DEBUG:§e Packet §8[§f{$packet->getName()} §8| §f".$packet::NETWORK_ID."§8]§e requested a change but no change supported §a{$type}§e.");
             }
 
-            return $oldPacket;
+            return;
         }
 
         $pk = $this->dir . $name;
+        /** @var DataPacket $pk */
         $pk = new $pk;
-        $pk->setBuffer($oldPacket->buffer, $oldPacket->offset);
-
-        if (!$oldPacket instanceof DataPacket) {
-            if (self::DEVELOPER) {
-                MainLogger::getLogger()->info("§8[MultiVersion]: Packet change requested on non DataPacket typing. {$oldPacket->getName()} | " . $oldPacket::NETWORK_ID);
-            }
-        }
+        $pk->setBuffer($packet->buffer, $packet->offset);
 
         if ($pk instanceof CustomTranslator) {
-            $pk = $pk->translateCustomPacket($oldPacket);
+            $pk = $pk->translateCustomPacket($packet);
         }
 
-        $oldPacket = $pk;
+        $packet = $pk;
         
         if (self::DEVELOPER) {
-            MainLogger::getLogger()->info("§6[MultiVersion] DEBUG: Modified Packet §8[§f {$oldPacket->getName()} §8| §f".$oldPacket::NETWORK_ID."§8]§6 §a{$type}§6.");
+            MainLogger::getLogger()->info("§6[MultiVersion] DEBUG: Modified Packet §8[§f{$packet->getName()} §8| §f".$packet::NETWORK_ID."§8]§6 §a{$type}§6.");
         }
 
-        return $oldPacket;
+        return;
     }
 
-    public function translateLogin($packet) {
-        if (!isset($this->protocolPackets['LoginPacket'])) {
-            return $packet;
-        } else {
-            $pk = $this->dir . 'LoginPacket';
-            $pk = new $pk;
-            $pk->translateLogin($packet);
-            $pk->setBuffer($packet->buffer, $packet->offset);
-
-            return $pk;
-        }
-    }
-
-    public function registerListeners() {
-        foreach ($this->wantedListeners as $lsn) {
-            $listener = $this->dirPath . "PacketListeners\\$lsn";
-            $listener = new $listener;
-            $this->addPacketListener($listener);
-        }
+    public function translateLogin(&$packet){
+        $pk = $this->dir . 'LoginPacket';
+        $pk = new $pk;
+        $pk->translateLogin($packet);
     }
 }
