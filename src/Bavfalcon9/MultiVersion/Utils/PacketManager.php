@@ -19,7 +19,6 @@ namespace Bavfalcon9\MultiVersion\Utils;
 use Bavfalcon9\MultiVersion\Main;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets\RespawnPacket;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets\TickSyncPacket;
-use function in_array;
 use pocketmine\Player;
 use pocketmine\network\mcpe\protocol\DataPacket;
 use pocketmine\network\mcpe\protocol\LoginPacket;

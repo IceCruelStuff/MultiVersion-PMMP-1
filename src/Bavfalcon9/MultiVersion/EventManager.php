@@ -67,8 +67,7 @@ class EventManager implements Listener {
      */
     public function onSend(DataPacketSendEvent $event): void {
         $packet = $event->getPacket();
-        if ($packet instanceof BatchPacket) { // weird hack
-            /** @var BatchPacket $packet */
+        if ($packet instanceof BatchPacket) {
             $newBatch = new BatchPacket();
             foreach ($packet->getPackets() as $buf) {
                 $pk = PacketPool::getPacket($buf);
