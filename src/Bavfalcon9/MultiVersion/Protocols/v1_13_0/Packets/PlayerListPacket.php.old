@@ -59,9 +59,8 @@ class PlayerListPacket extends BatchCheck implements CustomTranslator {
                 $entry->entityUniqueId = $this->getEntityUniqueId();
                 $entry->username = $this->getString();
 
-                // Assuming they're 1.13 because they are in the array
-                if (isset(PacketManager::$protocolPlayers[$entry->username])) {
-                    if (PacketManager::$protocolPlayers[$entry->username] !== ProtocolVersion::VERSIONS['1.13.0']) throw new \Exception('1.13 version called but unsupported version given.');
+                // Assuming they're 1.12 or older because they aren't in the array
+                if (!isset(PacketManager::$protocolPlayers[$entry->username])) {
                     $skinId = $this->getString();
                     $skinData = $this->getString();
                     $capeData = $this->getString();
@@ -81,6 +80,7 @@ class PlayerListPacket extends BatchCheck implements CustomTranslator {
                     $entry->isTeacher = false;
                     $entry->isHost = false;
                 } else {
+                    if (PacketManager::$protocolPlayers[$entry->username] !== ProtocolVersion::VERSIONS['1.13.0']) throw new \Exception('Not sure what to do here');
                     $entry->xboxUserId = $this->getString();
                     $entry->platformChatId = $this->getString();
                     $entry->buildPlatform = $this->getLInt();
@@ -91,7 +91,6 @@ class PlayerListPacket extends BatchCheck implements CustomTranslator {
             } else {
                 $entry->uuid = $this->getUUID();
             }
-            var_dump($entry);
             $this->entries[$i] = $entry;
         }
     }
@@ -216,20 +215,18 @@ class PlayerListPacket extends BatchCheck implements CustomTranslator {
 
 
     public function onPacketMatch(&$packet): Void {
-        var_dump($this->inBound);
-        if ($this->inBound) {
-            // afaik these are handled by the server anyway
+        //if ($this->inBound) {
             $newPacket = new PlayerListPacket;
             $newPacket->setBuffer($packet->buffer, $packet->offset);
             $newPacket->decode();
             $packet = $newPacket;
             $newPacket->encode();
-        } else {
+        /*} else {
             $packet->decode();
             $newPacket = new PlayerListPacket;
             $newPacket = $newPacket->translateCustomPacket($packet);
             $packet = $newPacket;
             $packet->encode();
-        }
+        }*/
     }
 }
