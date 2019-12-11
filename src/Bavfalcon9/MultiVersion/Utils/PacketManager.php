@@ -152,28 +152,32 @@ class PacketManager {
             $protocol = $this->registered[$this->versionPlayers[$player->getName()]];
             $packets = $protocol->getProtocolPackets();
             foreach ($packet->getPackets() as $buf) {
-                $pk = PacketPool::getPacket($buf);
-                $name = $pk->getName();
+                try {
+                    $pk = PacketPool::getPacket($buf);
+                    $name = $pk->getName();
 
-                if (!isset($packets[$name])) {
-                    $pk->decode();
-                    $pk->encode();
-                    $newBatch->addPacket($pk);
-                    continue;
-                } else {
-                    $newpacket = $protocol->getDir() . $name;
-                    $newpacket = new $newpacket;
-                    if (!$newpacket instanceof BatchCheck) {
+                    if (!isset($packets[$name])) {
                         $pk->decode();
                         $pk->encode();
                         $newBatch->addPacket($pk);
                         continue;
                     } else {
-                        $newpacket->inBound = true;
-                        $newpacket->onPacketMatch($pk); // passed by reference
-                        $newBatch->addPacket($newpacket);
-                        continue;
+                        $newpacket = $protocol->getDir() . $name;
+                        $newpacket = new $newpacket;
+                        if (!$newpacket instanceof BatchCheck) {
+                            $pk->decode();
+                            $pk->encode();
+                            $newBatch->addPacket($pk);
+                            continue;
+                        } else {
+                            $newpacket->inBound = true;
+                            $newpacket->onPacketMatch($pk); // passed by reference
+                            $newBatch->addPacket($newpacket);
+                            continue;
+                        }
                     }
+                } catch (\Throwable $e) {
+                    continue;
                 }
             }
             $packet = $newBatch;
@@ -223,53 +227,54 @@ class PacketManager {
                 $protocol = $this->registered[$this->versionPlayers[$player->getName()]];
                 $packets = $protocol->getProtocolPackets();
                 foreach ($packet->getPackets() as $buf) {
-                    $pk = PacketPool::getPacket($buf);
-                    $name = $pk->getName();
+                    try {
+                        $pk = PacketPool::getPacket($buf);
+                        $name = $pk->getName();
 
-                    if (!isset($packets[$name])) {
-                        $pk->decode();
-                        $pk->encode();
-                        $newBatch->addPacket($pk);
-                        continue;
-                    } else {
-                        $newpacket = $protocol->getDir() . $name;
-                        $newpacket = new $newpacket;
-                        if (!$newpacket instanceof BatchCheck) {
-                            if ($packet instanceof RespawnPacket){
-                                return;
-                            }
+                        if (!isset($packets[$name])) {
                             $pk->decode();
-                            $protocol = $this->versionPlayers[$player->getName()];
-                            $protocol = $this->registered[$protocol];
-                            $pkN = $protocol->getPacketName($nId);
-                            $success = $this->changePacket($protocol, $pkN, $pk, $player, 'SENT');
-                            if ($success === null) {
-                                $this->plugin->getLogger()->critical("Tried to send an unknown packet[$nId] to player: {$player->getName()}");
-
-                                return;
-                            }
                             $pk->encode();
                             $newBatch->addPacket($pk);
-                        } else {
-                            $newpacket->inBound = false;
-                            $newpacket->onPacketMatch($pk);
-                            $pk = $newpacket;
-                            $newBatch->addPacket($newpacket);
                             continue;
+                        } else {
+                            $newpacket = $protocol->getDir() . $name;
+                            $newpacket = new $newpacket;
+                            if (!$newpacket instanceof BatchCheck) {
+                                $pk->decode();
+                                $protocol = $this->versionPlayers[$player->getName()];
+                                $protocol = $this->registered[$protocol];
+                                $pkN = $protocol->getPacketName($nId);
+                                $success = $this->changePacket($protocol, $pkN, $pk, $player, 'SENT');
+                                if ($success === null) {
+                                    $this->plugin->getLogger()->critical("Tried to send an unknown packet[$nId] to player: {$player->getName()}");
+
+                                    return;
+                                }
+                                $pk->encode();
+                                $newBatch->addPacket($pk);
+                            } else {
+                                $newpacket->inBound = false;
+                                $newpacket->onPacketMatch($pk);
+                                $pk = $newpacket;
+                                $newBatch->addPacket($newpacket);
+                                continue;
+                            }
                         }
+                    } catch (\Throwable $e) {
+                        continue;
                     }
                 }
                 $packet = $newBatch;
                 return;
             }
 
-            if ($packet instanceof RespawnPacket){
-                return;
-            }
-
             $protocol = $this->versionPlayers[$player->getName()];
             $protocol = $this->registered[$protocol];
+            $packets = $protocol->getProtocolPackets();
             $pkN = $protocol->getPacketName($nId);
+
+            if (!isset($packets[$packet->getName()])) return;
+            
             $success = $this->changePacket($protocol, $pkN, $packet, $player, 'SENT');
             if ($success === null) {
                 $this->plugin->getLogger()->critical("Tried to send an unknown packet[$nId] to player: {$player->getName()}");
