@@ -96,7 +96,8 @@ class PacketManager {
                 $oldProto = $this->oldplayers[$packet->username];
                 $this->plugin->getLogger()->debug("§eUser: {$packet->username} [attempting to hack login for protocol: $oldProto]");
                 $pc = $this->registered[$oldProto];
-                $pc->translateLogin($packet);
+                $this->translateLogin($pc, $packet);
+                if (!isset($this->queue[$packet->username])) return;
                 array_splice($this->queue[$packet->username], array_search($nId, $this->queue[$packet->username]));
             } else if ($protocol !== ProtocolInfo::CURRENT_PROTOCOL) {
                 if (!isset($this->registered[$protocol])) {
@@ -104,7 +105,7 @@ class PacketManager {
                         unset($this->queue[$packet->username]);
                     }
 
-                    $this->plugin->getLogger()->critical("{$packet->username} tried to join with protocol: $protocol");
+                    $this->plugin->getLogger()->critical("{$packet->username} attempting to join with protocol: $protocol");
                     $player->close('', '§c[MultiVersion]: Your game version is not yet supported here. [$protocol]');
                     $event->setCancelled();
                 } else {
@@ -124,14 +125,6 @@ class PacketManager {
             return;
         } else if ($packet instanceof TickSyncPacket){
             $event->setCancelled();
-
-            return;
-        } else if ($packet instanceof RespawnPacket) {
-            $pk = new RespawnPacket();
-            $pk->position = $packet->position;
-            $pk->state = RespawnPacket::STATE_READY_TO_SPAWN;
-            $pk->entityRuntimeId = $player->getId();
-            $player->dataPacket($pk);
 
             return;
         } else if ($packet instanceof DisconnectPacket) {
@@ -209,5 +202,83 @@ class PacketManager {
     private function handleOldReceived(DataPacket $packet, Player $player) {
         $adapter = new PlayerNetworkSessionAdapter($this->plugin->getServer(), $player);
 		$adapter->handleDataPacket($packet);
+    }
+
+    /**
+     * @param ProtocolVersion $protocol
+     * @param String $name
+     * @param mixed  $oldPacket
+     * @param Player $player - Note this may vary based on protocol which is why it's not data typed.
+     * @param String $type
+     *
+     * @return mixed
+     */
+    private function changePacket(ProtocolVersion $protocol, String $name, &$oldPacket, $player, String $type = 'SENT') {
+        foreach ($protocol->getPacketListeners() as $listener) {
+            if ($listener->getPacketName() === $oldPacket->getName() && $oldPacket::NETWORK_ID === $listener->getPacketNetworkID()) {
+                $success = $listener->onPacketCheck($oldPacket);
+                if (!$success) {
+                    continue;
+                } else {
+                    $listener->inBound = ($type === 'SENT') ? false : true;
+                    $listener->onPacketMatch($oldPacket);
+                    $modified = true;
+                    continue;
+                }
+            }
+        }
+
+        if (!isset($protocol->getProtocolPackets()[$name]) && $protocol->getRestricted()) {
+            return null;
+        }
+
+        if (!isset($protocol->getProtocolPackets()[$name])) {
+            if ($protocol::DEVELOPER) {
+                MainLogger::getLogger()->info("§c[MultiVersion] DEBUG:§e Packet §8[§f {$oldPacket->getName()} §8| §f".$oldPacket::NETWORK_ID."§8]§e requested a change but no change supported §a{$type}§e.");
+            }
+
+            return $oldPacket;
+        }
+
+        $pk = $protocol->getDir() . $name;
+        $pk = new $pk;
+        $pk->setBuffer($oldPacket->buffer, $oldPacket->offset);
+
+        if (!$oldPacket instanceof DataPacket) {
+            if ($protocol::DEVELOPER) {
+                MainLogger::getLogger()->info("§8[MultiVersion]: Packet change requested on non DataPacket typing. {$oldPacket->getName()} | " . $oldPacket::NETWORK_ID);
+            }
+        }
+
+        if ($pk instanceof CustomTranslator) {
+            $pk = $pk->translateCustomPacket($oldPacket);
+        }
+
+        $oldPacket = $pk;
+        
+        if ($protocol::DEVELOPER) {
+            MainLogger::getLogger()->info("§6[MultiVersion] DEBUG: Modified Packet §8[§f {$oldPacket->getName()} §8| §f".$oldPacket::NETWORK_ID."§8]§6 §a{$type}§6.");
+        }
+
+        return $oldPacket;
+    }
+
+    /**
+     * @param ProtocolVersion $protocol
+     * @param Mixed $packet
+     * 
+     * @return Mixed
+     */
+    private function translateLogin(ProtocolVersion $protocol, &$packet) {
+        if (!isset($protocol->getProtocolPackets()['LoginPacket'])) {
+            return $packet;
+        } else {
+            $pk = $protocol->getDir() . 'LoginPacket';
+            $pk = new $pk;
+            $pk->setBuffer($packet->buffer, $packet->offset);
+            $pk->decode();
+            $pk->translateLogin($packet);
+            return $packet;
+        }
     }
 }
