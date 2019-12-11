@@ -97,10 +97,10 @@ class EventManager implements Listener {
                 "LoginPacket" => 0x01,
                 "StartGamePacket" => 0x0b,
                 "RespawnPacket" => 0x2d,
-                "PlayerListPacket" => 0x3f,
-                "PlayerSkinPacket" => 0x5d,
-                "ExplodePacket" => 0x17,
-                "ResourcePackDataInfoPacket" => 0x52
+                //"PlayerListPacket" => 0x3f,
+                //"PlayerSkinPacket" => 0x5d,
+                "ExplodePacket" => 0x17
+                //"ResourcePackDataInfoPacket" => 0x52
             ]);
             $newVersion = $this->packetManager->registerProtocol($newVersion);
             define("MULTIVERSION_v1_12_0", $this->plugin->getDataFolder()."v1_12_0");
