@@ -87,6 +87,11 @@ class EventManager implements Listener {
                 continue;
             }
 
+            if (ProtocolInfo::MINECRAFT_VERSION_NETWORK === $version->getVersionName()) {
+                $version->onMatchesVersion();
+                continue;    
+            }
+
             if (!$version->isAllowed(ProtocolInfo::MINECRAFT_VERSION_NETWORK)) {
                 $version->onNotAllowed();
                 continue;

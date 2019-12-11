@@ -45,6 +45,11 @@ abstract class Version {
         return true;
     } 
 
+    public function onMatchesVersion(): bool {
+        MainLogger::getLogger()->info("[MultiVersion]: §eYour server is already running: {$this->version}");
+        return true;    
+    }
+
     public function isAllowed(String $version=''): Bool {
         if ($this->disabled) return false;
         return in_array($version, $this->allowed);
