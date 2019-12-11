@@ -16,6 +16,7 @@ declare(strict_types=1);
 
 namespace Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets;
 
+use Bavfalcon9\MultiVersion\Utils\BatchCheck;
 use Bavfalcon9\MultiVersion\Utils\PacketManager;
 use Bavfalcon9\MultiVersion\Utils\ProtocolVersion;
 use Bavfalcon9\MultiVersion\Utils\CustomTranslator;
@@ -30,9 +31,10 @@ use pocketmine\network\mcpe\protocol\types\PlayerListEntry as PMListEntry;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\PlayerListPacket as PMListPacket;
 use pocketmine\utils\MainLogger;
+use pocketmine\Server;
 use function count;
 
-class PlayerListPacket extends DataPacket implements CustomTranslator {
+class PlayerListPacket extends DataPacket implements BatchCheck, CustomTranslator{
 
     public const NETWORK_ID = ProtocolInfo::PLAYER_LIST_PACKET;
     public const TYPE_ADD = 0;
@@ -42,6 +44,9 @@ class PlayerListPacket extends DataPacket implements CustomTranslator {
     public $entries = [];
     /** @var int */
     public $type;
+    /** @var bool */
+    public $inBound = false;
+    private $mode = false;
 
     public function clean() {
         $this->entries = [];
@@ -58,13 +63,17 @@ class PlayerListPacket extends DataPacket implements CustomTranslator {
                 $entry->entityUniqueId = $this->getEntityUniqueId();
                 $entry->username = $this->getString();
 
-                // Assuming they're 1.12 because they aren't in the array
+                // Assuming they're 1.12 or older because they aren't in the array
                 if (!isset(PacketManager::$protocolPlayers[$entry->username])) {
-                    $skinId = $this->getString();
-                    $skinData = $this->getString();
-                    $capeData = $this->getString();
-                    $geometryName = $this->getString();
-				    $geometryData = $this->getString();
+                    /* THIS IS HACKY */
+                    $cached = Server::getInstance()->getPlayer($entry->username);
+                    var_dump($cached);
+                    $cached = (!$cached) ? NULL : $cached->getSkin();
+                    $skinId = ($cached !== NULL) ? $cached->getSkinId() : $this->getString();
+                    $skinData = ($cached !== NULL) ? $cached->getSkinData() : $this->getString();
+                    $capeData = ($cached !== NULL) ? $cached->getCapeData() : $this->getString();
+                    $geometryName = ($cached !== NULL) ? $cached->getGeometryName() : $this->getString();
+				    $geometryData = ($cached !== NULL) ? $cached->getGeometryData() : $this->getString();
                     $entry->skin = new PMSkin(
                         $skinId,
                         $skinData,
@@ -74,7 +83,7 @@ class PlayerListPacket extends DataPacket implements CustomTranslator {
                     );
                     $entry->xboxUserId = $this->getString();
                     $entry->platformChatId = $this->getString();
-                    $entry->skin = Skin::convertFromLegacySkin($entry->skin);
+                    $entry->skin = (!$cached) ? Skin::null() : Skin::convertFromLegacySkin($cached);
                     $entry->buildPlatform = -1;
                     $entry->isTeacher = false;
                     $entry->isHost = false;
@@ -95,6 +104,7 @@ class PlayerListPacket extends DataPacket implements CustomTranslator {
     }
 
     protected function encodePayload() {
+        if (!$this->type) $this->type = self::TYPE_ADD;
         $this->putByte($this->type);
         $this->putUnsignedVarInt(count($this->entries));
         foreach($this->entries as $entry){
@@ -210,5 +220,15 @@ class PlayerListPacket extends DataPacket implements CustomTranslator {
         }
 
         return $this;
+    }
+
+
+    public function onPacketMatch(&$packet): Void {
+        if ($packet instanceof PMListPacket) {
+            $newPacket = new PlayerListPacket;
+            $newPacket->setBuffer($packet->buffer, $packet->offset);
+            $newPacket->decode(); // decodes packet
+            $newPacket->encode(); 
+        }
     }
 }

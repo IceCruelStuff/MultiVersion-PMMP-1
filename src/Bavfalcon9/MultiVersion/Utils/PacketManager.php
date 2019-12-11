@@ -17,16 +17,19 @@ declare(strict_types=1);
 namespace Bavfalcon9\MultiVersion\Utils;
 
 use Bavfalcon9\MultiVersion\Main;
+use Bavfalcon9\MultiVersion\Utils\BatchCheck;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets\RespawnPacket;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets\TickSyncPacket;
 use pocketmine\Player;
-use pocketmine\network\mcpe\PlayerNetworkSessionAdapter;
-use pocketmine\network\mcpe\protocol\DataPacket;
-use pocketmine\network\mcpe\protocol\LoginPacket;
-use pocketmine\network\mcpe\protocol\ProtocolInfo;
-use pocketmine\network\mcpe\protocol\DisconnectPacket;
 use pocketmine\event\server\DataPacketReceiveEvent;
 use pocketmine\event\server\DataPacketSendEvent;
+use pocketmine\network\mcpe\PlayerNetworkSessionAdapter;
+use pocketmine\network\mcpe\protocol\BatchPacket;
+use pocketmine\network\mcpe\protocol\DataPacket;
+use pocketmine\network\mcpe\protocol\DisconnectPacket;
+use pocketmine\network\mcpe\protocol\LoginPacket;
+use pocketmine\network\mcpe\protocol\ProtocolInfo;
+use pocketmine\network\mcpe\protocol\PacketPool;
 use function array_push;
 use function array_search;
 use function array_splice;
@@ -38,9 +41,9 @@ class PacketManager {
     /** @var Main */
     private $plugin;
     /** @var string[] */
-    private $oldplayers = [];
+    private $versionPlayers = [];
     /** @var array */
-    private $queue = []; // Packet queue to prevent duplications
+    private $queue = []; // Packet queue to prevent duplications (Sent from server)
     /** @var array */
     public static $protocolPlayers = [];
 
@@ -88,12 +91,12 @@ class PacketManager {
         $packet = $event->getPacket();
         $player = $event->getPlayer();
         $nId = $packet::NETWORK_ID;
-        self::$protocolPlayers = $this->oldplayers;
+        self::$protocolPlayers = $this->versionPlayers;
 
         if ($packet instanceof LoginPacket) {
             $protocol = $packet->protocol;
             if (isset($this->queue[$packet->username]) and in_array($nId, $this->queue[$packet->username])) {
-                $oldProto = $this->oldplayers[$packet->username];
+                $oldProto = $this->versionPlayers[$packet->username];
                 $this->plugin->getLogger()->debug("§eUser: {$packet->username} [attempting to hack login for protocol: $oldProto]");
                 $pc = $this->registered[$oldProto];
                 $this->translateLogin($pc, $packet);
@@ -109,13 +112,14 @@ class PacketManager {
                     $player->close('', '§c[MultiVersion]: Your game version is not yet supported here. [$protocol]');
                     $event->setCancelled();
                 } else {
-                    $this->plugin->getLogger()->debug("§e {$packet->username} joining with protocol: $protocol");
-                    $this->oldplayers[$packet->username] = $protocol;
+                    $protoName = ProtocolVersion::VERSIONS_NAME[$protocol];
+                    $this->plugin->getLogger()->debug("§e {$packet->username} joining with protocol: $protocol ({$protoName})");
+                    $this->versionPlayers[$packet->username] = $protocol;
                     $this->queue[$packet->username] = [];
                     array_push($this->queue[$packet->username], $nId);
                     $pc = $this->registered[$protocol];
                     $pkN = $pc->getPacketName($nId);
-                    $pc->changePacket($pkN, $packet, $player, 'RECEIVE');
+                    $this->changePacket($pc, $pkN, $packet, $player, 'RECEIVE');
 
                     $this->handleOldReceived($packet, $player);
                     $event->setCancelled();
@@ -129,11 +133,48 @@ class PacketManager {
             return;
         } else if ($packet instanceof DisconnectPacket) {
             if (isset($this->oldPlayers[$player->getName()])) unset($this->oldPlayers[$player->getName()]);
-            self::$protocolPlayers = $this->oldplayers;
+            self::$protocolPlayers = $this->versionPlayers;
             return;
         }
 
-        if (!isset($this->oldplayers[$player->getName()])) {
+        if (!isset($this->versionPlayers[$player->getName()])) {
+            return;
+        }
+
+        if ($packet instanceof BatchPacket) {
+            $newBatch = new BatchPacket();
+            $protocol = $this->registered[$this->versionPlayers[$player->getName()]];
+            $packets = $protocol->getProtocolPackets();
+            foreach ($packet->getPackets() as $buf) {
+                try {
+                    $pk = PacketPool::getPacket($buf);
+                    $name = $pk->getName();
+
+                    if (!isset($packets[$name])) {
+                        $pk->decode();
+                        $pk->encode();
+                        $newBatch->addPacket($pk);
+                        continue;
+                    } else {
+                        $newpacket = $protocol->getDir() . $name;
+                        $newpacket = new $newpacket;
+                        if (!$newpacket instanceof BatchCheck) {
+                            $pk->decode();
+                            $pk->encode();
+                            $newBatch->addPacket($pk);
+                            continue;
+                        } else {
+                            $newpacket->inBound = true;
+                            $newpacket->onPacketMatch($pk); // passed by reference
+                            $newBatch->addPacket($newpacket);
+                            continue;
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    continue;
+                }
+            }
+            $packet = $newBatch;
             return;
         }
 
@@ -145,10 +186,10 @@ class PacketManager {
             array_splice($this->queue[$player->getName()], array_search($nId, $this->queue[$player->getName()]));
         } else {
             array_push($this->queue[$player->getName()], $nId);
-            $protocol = $this->oldplayers[$player->getName()];
+            $protocol = $this->versionPlayers[$player->getName()];
             $protocol = $this->registered[$protocol];
             $pkN = $protocol->getPacketName($nId);
-            $protocol->changePacket($pkN, $packet, $player, 'RECEIVE');
+            $this->changePacket($protocol, $pkN, $packet, $player, 'RECEIVE');
         }
     }
 
@@ -160,7 +201,7 @@ class PacketManager {
         $packet = $event->getPacket();
         $player = $event->getPlayer();
         $nId = $packet::NETWORK_ID;
-        if (!isset($this->oldplayers[$player->getName()])) {
+        if (!isset($this->versionPlayers[$player->getName()])) {
             return;
         }
 
@@ -171,18 +212,64 @@ class PacketManager {
                 $this->queue[$player->getName()] = [];
             }
 
-            if (!isset($this->oldplayers[$player->getName()])) {
+            if (!isset($this->versionPlayers[$player->getName()])) {
                 return;
             }
 
-            if ($packet instanceof RespawnPacket){
+            if ($packet instanceof BatchPacket) {
+                $newBatch = new BatchPacket();
+                $protocol = $this->registered[$this->versionPlayers[$player->getName()]];
+                $packets = $protocol->getProtocolPackets();
+                foreach ($packet->getPackets() as $buf) {
+                    try {
+                        $pk = PacketPool::getPacket($buf);
+                        $name = $pk->getName();
+
+                        if (!isset($packets[$name])) {
+                            $pk->decode();
+                            $pk->encode();
+                            $newBatch->addPacket($pk);
+                            continue;
+                        } else {
+                            $newpacket = $protocol->getDir() . $name;
+                            $newpacket = new $newpacket;
+                            if (!$newpacket instanceof BatchCheck) {
+                                $pk->decode();
+                                $protocol = $this->versionPlayers[$player->getName()];
+                                $protocol = $this->registered[$protocol];
+                                $pkN = $protocol->getPacketName($nId);
+                                $success = $this->changePacket($protocol, $pkN, $pk, $player, 'SENT');
+                                if ($success === null) {
+                                    $this->plugin->getLogger()->critical("Tried to send an unknown packet[$nId] to player: {$player->getName()}");
+
+                                    return;
+                                }
+                                $pk->encode();
+                                $newBatch->addPacket($pk);
+                            } else {
+                                $newpacket->inBound = false;
+                                $newpacket->onPacketMatch($pk);
+                                $pk = $newpacket;
+                                $newBatch->addPacket($newpacket);
+                                continue;
+                            }
+                        }
+                    } catch (\Throwable $e) {
+                        continue;
+                    }
+                }
+                $packet = $newBatch;
                 return;
             }
 
-            $protocol = $this->oldplayers[$player->getName()];
+            $protocol = $this->versionPlayers[$player->getName()];
             $protocol = $this->registered[$protocol];
+            $packets = $protocol->getProtocolPackets();
             $pkN = $protocol->getPacketName($nId);
-            $success = $protocol->changePacket($pkN, $packet, $player, 'SENT');
+
+            if (!isset($packets[$packet->getName()])) return;
+            
+            $success = $this->changePacket($protocol, $pkN, $packet, $player, 'SENT');
             if ($success === null) {
                 $this->plugin->getLogger()->critical("Tried to send an unknown packet[$nId] to player: {$player->getName()}");
 

@@ -14,10 +14,10 @@
 
 declare(strict_types=1);
 
-namespace Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets;
+namespace Bavfalcon9\MultiVersion\Protocols\v1_14_0\Packets;
 
 use Bavfalcon9\MultiVersion\Utils\BatchCheck;
-use Bavfalcon9\MultiVersion\Protocols\v1_13_0\types\RuntimeBlockMapping;
+use Bavfalcon9\MultiVersion\Protocols\v1_14_0\types\RuntimeBlockMapping;
 use pocketmine\network\mcpe\protocol\types\RuntimeBlockMapping as PMRuntimeBlockMapping;
 use pocketmine\network\mcpe\protocol\UpdateBlockPacket as PMUpdateBlock;
 
