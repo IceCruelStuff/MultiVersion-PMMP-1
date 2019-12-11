@@ -18,6 +18,7 @@ namespace Bavfalcon9\MultiVersion\Utils;
 
 use Bavfalcon9\MultiVersion\Main;
 use Bavfalcon9\MultiVersion\Utils\BatchCheck;
+use Bavfalcon9\MultiVersion\Utils\ProtocolVersion;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets\RespawnPacket;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets\TickSyncPacket;
 use pocketmine\Player;
@@ -30,6 +31,7 @@ use pocketmine\network\mcpe\protocol\DisconnectPacket;
 use pocketmine\network\mcpe\protocol\LoginPacket;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\PacketPool;
+
 use function array_push;
 use function array_search;
 use function array_splice;
@@ -47,12 +49,23 @@ class PacketManager {
     /** @var array */
     public static $protocolPlayers = [];
 
+    /** @var PacketManager */
+    private static $instance;
+
+    /**
+     * @return PacketManager
+     */
+    public static function getInstance(): PacketManger {
+        return self::$instance;
+    }
+
     /**
      * PacketManager constructor.
      * @param Main $pl
      */
     public function __construct(Main $pl) {
         $this->plugin = $pl;
+        self::$instance = $this;
     }
 
     /**
@@ -81,6 +94,17 @@ class PacketManager {
         unset($this->registered[$pv->getProtocol()]);
 
         return true;
+    }
+
+    public function getRegisteredProtocols(): Array {
+        return $this->registered;
+    }
+
+    public function getRegisteredProtocol($proto=388): ?ProtocolVersion {
+        foreach ($this->registered as $protocol) {
+            if ($protocol->getProtocol() === $proto) return $protocol;
+        }
+        return null;
     }
 
     /**

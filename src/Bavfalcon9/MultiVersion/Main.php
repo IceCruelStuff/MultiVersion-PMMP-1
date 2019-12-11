@@ -18,11 +18,15 @@ namespace Bavfalcon9\MultiVersion;
 
 use pocketmine\plugin\PluginBase;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
+use pocketmine\utils\Config;
 use Bavfalcon9\MultiVersion\Utils\ProtocolVersion;
 use function define;
 use function scandir;
 
 class Main extends PluginBase {
+
+    /** @var Config */
+    private $config;
 
     public function onEnable() {
         if (!isset(ProtocolVersion::VERSIONS[ProtocolInfo::MINECRAFT_VERSION_NETWORK])) {
@@ -30,8 +34,10 @@ class Main extends PluginBase {
             $this->getServer()->getPluginManager()->disablePlugin($this);
         }
         define('MultiVersionFile', $this->getFile());
-        $this->getServer()->getPluginManager()->registerEvents(new EventManager($this), $this);
+        $this->saveResource('config.yml');
         $this->saveAllResources();
+        $this->config = new Config($this->getDataFolder() . 'config.yml');
+        $this->getServer()->getPluginManager()->registerEvents(new EventManager($this), $this);
     }
 
     private function saveAllResources() {
@@ -39,7 +45,7 @@ class Main extends PluginBase {
         $versions = scandir($resourcePath);
 
         foreach ($versions as $version) {
-            if ($version === '.' || $version === '..') {
+            if ($version === '.' || $version === '..' || $version === 'config.yml') {
                 continue;
             } else {
                 $files = scandir($resourcePath . "/" . $version);
@@ -51,5 +57,9 @@ class Main extends PluginBase {
                 }
             }
         }
+    }
+
+    public function getSavedData(): ?Config {
+        return $this->config;
     }
 }
