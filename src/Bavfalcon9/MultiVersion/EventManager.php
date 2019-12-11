@@ -70,20 +70,17 @@ class EventManager implements Listener {
             PacketPool::registerPacket(new TickSyncPacket());
             PacketPool::registerPacket(new RespawnPacket());
             $newVersion->setProtocolPackets([
+                "AddActorPacket" => 0x0d,
+                "LevelEventPacket" => 0x19,
+                "LevelSoundEventPacket" => 0x18,
                 "LoginPacket" => 0x01,
-                "StartGamePacket" => 0x0b,
                 "PlayerListPacket" => 0x3f,
                 "PlayerSkinPacket" => 0x5d,
-                "UpdateBlockPacket" => 0x15,
-                "RespawnPacket" => 0x2d
+                "RespawnPacket" => 0x2d,
+                "StartGamePacket" => 0x0b,
+                "UpdateBlockPacket" => 0x15
             ]);
-            $newVersion->setListeners([
-                "UpdateBlockListener",
-                "LevelEventListener",
-                "PlayerSkinListener",
-                "AddActorListener",
-                "LevelSoundEventListener"
-            ]);
+            $newVersion->setListeners([]);
             $newVersion = $this->packetManager->registerProtocol($newVersion);
             define("MULTIVERSION_v1_13_0", $this->plugin->getDataFolder()."v1_13_0");
             if (!$newVersion) {
@@ -111,6 +108,22 @@ class EventManager implements Listener {
                 MainLogger::getLogger()->critical("[MULTIVERSION]: Failed to add version: 1.12.x");
             } else {
                 MainLogger::getLogger()->info("[MultiVersion]: §aLoaded support for: 1.12.x");
+            }
+
+            // 1.14 support on MCPE 1.13 OFFICIAL BUILD
+            $newVersion = new ProtocolVersion(ProtocolVersion::VERSIONS["1.14.0"], "1.14.0", false);
+            $newVersion->setProtocolPackets([
+                "LoginPacket" => 0x01//,
+                //"StartGamePacket" => 0x0b,
+                //"RespawnPacket" => 0x2d,
+                //"PlayerListPacket" => 0x3f
+            ]);
+            $newVersion = $this->packetManager->registerProtocol($newVersion);
+            define("MULTIVERSION_v1_14_0", $this->plugin->getDataFolder()."v1_14_0");
+            if (!$newVersion) {
+                MainLogger::getLogger()->critical("[MULTIVERSION]: Failed to add version: 1.14.x");
+            } else {
+                MainLogger::getLogger()->info("[MultiVersion]: §aLoaded support for: 1.14.x");
             }
         }
     }

@@ -14,7 +14,7 @@
 
 namespace Bavfalcon9\MultiVersion\Protocols\v1_12_0\Packets;
 
-use Bavfalcon9\MultiVersion\Protocols\CustomTranslator;
+use Bavfalcon9\MultiVersion\Utils\CustomTranslator;
 use pocketmine\math\Vector3;
 use pocketmine\network\mcpe\NetworkSession;
 use pocketmine\network\mcpe\protocol\DataPacket;

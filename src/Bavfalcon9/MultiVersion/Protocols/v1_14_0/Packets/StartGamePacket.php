@@ -13,10 +13,10 @@
 
 declare(strict_types=1);
 
-namespace Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets;
+namespace Bavfalcon9\MultiVersion\Protocols\v1_14_0\Packets;
 
 use Bavfalcon9\MultiVersion\Utils\CustomTranslator;
-use Bavfalcon9\MultiVersion\Protocols\v1_13_0\types\RuntimeBlockMapping;
+use Bavfalcon9\MultiVersion\Protocols\v1_14_0\types\RuntimeBlockMapping;
 use pocketmine\network\mcpe\NetworkSession;
 use pocketmine\network\mcpe\protocol\DataPacket;
 use pocketmine\math\Vector3;

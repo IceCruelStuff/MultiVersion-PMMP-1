@@ -14,10 +14,12 @@
 
 declare(strict_types=1);
 
-namespace Bavfalcon9\MultiVersion\Protocols;
+namespace Bavfalcon9\MultiVersion\Utils;
 
-interface CustomTranslator{
+use pocketmine\network\mcpe\protocol\DataPacket;
 
-    public function translateCustomPacket($packet);
+interface BatchCheck {
+    #public $inBound = false;
 
+    public function onPacketMatch(&$packet): void;
 }
