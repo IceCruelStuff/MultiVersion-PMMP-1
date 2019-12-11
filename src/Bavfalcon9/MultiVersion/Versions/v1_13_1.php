@@ -6,32 +6,23 @@ use Bavfalcon9\MultiVersion\Utils\PacketManager;
 use pocketmine\utils\MainLogger;
 use pocketmine\utils\Config;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
-use pocketmine\network\mcpe\protocol\PacketPool;
 
-class v1_13_0 extends Version {
+class v1_13_1 extends Version {
 
     public function __construct() {
         $this->version = '1.13.0';
         $this->protocol = ProtocolVersion::VERSIONS['1.13.0'];
-        $this->allowed = ['1.12.0'];
+        $this->allowed = ['1.14.0'];
         $this->disabled = false;
     }
 
     public function onLoad(PacketManager $packetManager, $plugin): void {
-        // 1.13 support on MCPE 1.12
-        $newVersion = new ProtocolVersion(ProtocolVersion::VERSIONS["1.13.0"], "1.13.0", false);
+        // 1.13 support on MCPE 1.14
+        $newVersion = new ProtocolVersion(ProtocolVersion::VERSIONS["1.13.0"], "1.13.1", false);
             PacketPool::registerPacket(new TickSyncPacket());
             PacketPool::registerPacket(new RespawnPacket());
             $newVersion->setProtocolPackets([
-                "AddActorPacket" => 0x0d,
-                "LevelEventPacket" => 0x19,
-                "LevelSoundEventPacket" => 0x18,
-                "LoginPacket" => 0x01,
-                "PlayerListPacket" => 0x3f,
-                "PlayerSkinPacket" => 0x5d,
-                "RespawnPacket" => 0x2d,
-                "StartGamePacket" => 0x0b,
-                "UpdateBlockPacket" => 0x15
+                "LoginPacket" => 0x01
             ]);
             $newVersion->setListeners([]);
             $packetManager->registerProtocol($newVersion);

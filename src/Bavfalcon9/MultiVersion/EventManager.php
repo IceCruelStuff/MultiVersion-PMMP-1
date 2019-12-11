@@ -20,6 +20,7 @@ use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets\RespawnPacket;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets\TickSyncPacket;
 use Bavfalcon9\MultiVersion\Utils\PacketManager;
 use Bavfalcon9\MultiVersion\Utils\ProtocolVersion;
+use Bavfalcon9\MultiVersion\Utils\VersionIdentifier;
 use Bavfalcon9\MultiVersion\Versions\v1_12_0;
 use Bavfalcon9\MultiVersion\Versions\v1_13_0;
 use Bavfalcon9\MultiVersion\Versions\v1_14_0;
@@ -75,35 +76,44 @@ class EventManager implements Listener {
         $versions = [
             "1.12.0" => new v1_12_0(),
             "1.13.0" => new v1_13_0(),
+            "1.13.1" => new v1_13_1(),
             "1.14.0" => new v1_14_0()
         ];
 
         foreach ($supported as $version) {
-            if (!isset($versions[$version])) continue;
+            $supportedVersions = new VersionIdentifier($version);
+            $supportedVersions = $supportedVersions->getSupported(array_keys($versions));
             
-            $version = $versions[$version];
-            if ($version->isDisabled()) {
-                $version->onDisable('[Version Disabled]');
+            if (empty($supportedVersions)) {
+                MainLogger::getLogger()->critical("[MultiVersion]: Tried to load non-supported version: {$version}");
                 continue;
             }
 
-            if (ProtocolInfo::MINECRAFT_VERSION_NETWORK === $version->getVersionName()) {
-                $version->onMatchesVersion();
-                continue;    
-            }
+            foreach ($supportedVersions as $v) {
+                $version = $versions[$version];
+                if ($version->isDisabled()) {
+                    $version->onDisable('[Version Disabled]');
+                    continue;
+                }
 
-            if (!$version->isAllowed(ProtocolInfo::MINECRAFT_VERSION_NETWORK)) {
-                $version->onNotAllowed();
-                continue;
-            }
-            try {
-                $version->onLoad($this->packetManager, $this->plugin);
-                $version->onEnable();
-                $this->versions[$version->getVersionName()] = $version;
-            } catch (\Throwable $e) {
-                # echo $e;
-                $version->onDisable('[Error Occurred]');
-                continue;
+                if (ProtocolInfo::MINECRAFT_VERSION_NETWORK === $version->getVersionName()) {
+                    $version->onMatchesVersion();
+                    continue;    
+                }
+
+                if (!$version->isAllowed(ProtocolInfo::MINECRAFT_VERSION_NETWORK)) {
+                    $version->onNotAllowed();
+                    continue;
+                }
+                try {
+                    $version->onLoad($this->packetManager, $this->plugin);
+                    $version->onEnable();
+                    $this->versions[$version->getVersionName()] = $version;
+                } catch (\Throwable $e) {
+                    # echo $e;
+                    $version->onDisable('[Error Occurred]');
+                    continue;
+                }
             }
         }
     }
