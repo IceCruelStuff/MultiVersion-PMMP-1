@@ -18,6 +18,7 @@ namespace Bavfalcon9\MultiVersion\Utils;
 
 use Bavfalcon9\MultiVersion\Main;
 use Bavfalcon9\MultiVersion\Utils\BatchCheck;
+use Bavfalcon9\MultiVersion\Utils\ProtocolVersion;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets\RespawnPacket;
 use Bavfalcon9\MultiVersion\Protocols\v1_13_0\Packets\TickSyncPacket;
 use pocketmine\Player;
@@ -30,6 +31,7 @@ use pocketmine\network\mcpe\protocol\DisconnectPacket;
 use pocketmine\network\mcpe\protocol\LoginPacket;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
 use pocketmine\network\mcpe\protocol\PacketPool;
+
 use function array_push;
 use function array_search;
 use function array_splice;
@@ -47,12 +49,23 @@ class PacketManager {
     /** @var array */
     public static $protocolPlayers = [];
 
+    /** @var PacketManager */
+    private static $instance;
+
+    /**
+     * @return PacketManager
+     */
+    public static function getInstance(): PacketManger {
+        return self::$instance;
+    }
+
     /**
      * PacketManager constructor.
      * @param Main $pl
      */
     public function __construct(Main $pl) {
         $this->plugin = $pl;
+        self::$instance = $this;
     }
 
     /**
@@ -83,6 +96,17 @@ class PacketManager {
         return true;
     }
 
+    public function getRegisteredProtocols(): Array {
+        return $this->registered;
+    }
+
+    public function getRegisteredProtocol($proto=388): ?ProtocolVersion {
+        foreach ($this->registered as $protocol) {
+            if ($protocol->getProtocol() === $proto) return $protocol;
+        }
+        return null;
+    }
+
     /**
      * @param DataPacketReceiveEvent $event
      * @return void
@@ -100,6 +124,7 @@ class PacketManager {
                 $this->plugin->getLogger()->debug("§eUser: {$packet->username} [attempting to hack login for protocol: $oldProto]");
                 $pc = $this->registered[$oldProto];
                 $this->translateLogin($pc, $packet);
+                if (!isset($this->queue[$packet->username])) return;
                 array_splice($this->queue[$packet->username], array_search($nId, $this->queue[$packet->username]));
             } else if ($protocol !== ProtocolInfo::CURRENT_PROTOCOL) {
                 if (!isset($this->registered[$protocol])) {
@@ -107,7 +132,7 @@ class PacketManager {
                         unset($this->queue[$packet->username]);
                     }
 
-                    $this->plugin->getLogger()->critical("{$packet->username} tried to join with protocol: $protocol");
+                    $this->plugin->getLogger()->critical("{$packet->username} attempting to join with protocol: $protocol");
                     $player->close('', '§c[MultiVersion]: Your game version is not yet supported here. [$protocol]');
                     $event->setCancelled();
                 } else {
@@ -129,13 +154,6 @@ class PacketManager {
         } else if ($packet instanceof TickSyncPacket){
             $event->setCancelled();
 
-            return;
-        } else if ($packet instanceof RespawnPacket) {
-            $pk = new RespawnPacket();
-            $pk->position = $packet->position;
-            $pk->state = RespawnPacket::STATE_READY_TO_SPAWN;
-            $pk->entityRuntimeId = $player->getId();
-            $player->dataPacket($pk);
             return;
         } else if ($packet instanceof DisconnectPacket) {
             if (isset($this->oldPlayers[$player->getName()])) unset($this->oldPlayers[$player->getName()]);
@@ -362,16 +380,16 @@ class PacketManager {
      * 
      * @return Mixed
      */
-    private function translateLogin(ProtocolVersion $protocol, $packet) {
-        if (!isset($protocol->protocolPackets['LoginPacket'])) {
+    private function translateLogin(ProtocolVersion $protocol, &$packet) {
+        if (!isset($protocol->getProtocolPackets()['LoginPacket'])) {
             return $packet;
         } else {
             $pk = $protocol->getDir() . 'LoginPacket';
             $pk = new $pk;
-            $pk->translateLogin($packet);
             $pk->setBuffer($packet->buffer, $packet->offset);
-
-            return $pk;
+            $pk->decode();
+            $pk->translateLogin($packet);
+            return $packet;
         }
     }
 }

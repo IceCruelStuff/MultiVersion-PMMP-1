@@ -22,6 +22,8 @@ use pocketmine\utils\MainLogger;
 use pocketmine\utils\Utils;
 use pocketmine\network\mcpe\protocol\LoginPacket as PMLogin;
 use pocketmine\network\mcpe\protocol\ProtocolInfo;
+use pocketmine\network\mcpe\protocol\types\LegacySkinAdapter;
+use pocketmine\entity\Skin;
 use function get_class;
 use function json_decode;
 use function unpack;
@@ -53,6 +55,7 @@ class LoginPacket extends PMLogin{
     public $clientDataJwt;
     /** @var array decoded payload of the clientData JWT */
     public $clientData = [];
+    private static $cache = [];
     /**
      * This field may be used by plugins to bypass keychain verification. It should only be used for plugins such as
      * Specter where passing verification would take too much time and not be worth it.
@@ -119,11 +122,46 @@ class LoginPacket extends PMLogin{
         $this->locale = $this->clientData["LanguageCode"] ?? null;
     }
 
+    public function translateLogin(&$packet){
+        $this->protocol = ProtocolInfo::CURRENT_PROTOCOL; // required to assign a temporary bypass through the server.
+        $this->clientData = $packet->clientData;
+
+        $skinRecieved = new Skin(
+            $this->clientData['SkinId'],
+			base64_decode($this->clientData["SkinData"] ?? ""),
+			base64_decode($this->clientData["CapeData"] ?? ""),
+			$this->clientData["SkinGeometryName"] ?? "",
+			base64_decode($this->clientData["SkinGeometry"] ?? "")
+        );
+        $newSkin = new LegacySkinAdapter;
+        $newSkin = $newSkin->toSkinData($skinRecieved);
+        $this->clientData["AnimatedImageData"] = [];
+        $this->clientData["SkinId"] = $newSkin->getSkinId();
+        $this->clientData["SkinResourcePatch"] = base64_encode($newSkin->getResourcePatch());
+        $this->clientData["SkinImageHeight"] = $newSkin->getSkinImage()->getHeight();
+        $this->clientData["SkinImageWidth"] = $newSkin->getSkinImage()->getWidth();
+        $this->clientData["SkinData"] = base64_encode($newSkin->getSkinImage()->getData());
+        $this->clientData["CapeImageHeight"] = $newSkin->getCapeImage()->getHeight();
+        $this->clientData["CapeImageWidth"] = $newSkin->getCapeImage()->getWidth();
+        $this->clientData["CapeData"] = base64_encode($newSkin->getCapeImage()->getData());
+        $this->clientData["SkinGeometryData"] = base64_encode($newSkin->getGeometryData());
+        $this->clientData["AnimationData"] = base64_encode($newSkin->getAnimationData());
+        $this->clientData["PremiumSkin"] = $newSkin->isPremium();
+        $this->clientData["PersonaSkin"] = $newSkin->isPersona();
+        $this->clientData["CapeOnClassicSkin"] = $newSkin->isPersonaCapeOnClassic();
+        $this->clientData["CapeId"] = $newSkin->getCapeId();
+        $packet = $this;
+        self::$cache[$packet->username] = $packet;
+        return $packet;
+    }
+
     protected function encodePayload(){
         //TODO
     }
 
     public function handle(NetworkSession $session) : bool{
-        return $session->handleLogin($this);
+        $cached = (!isset(self::$cache[$this->username])) ? $this : self::$cache[$this->username];
+        if (isset(self::$cache[$this->username])) unset(self::$cache[$this->username]);
+        return $session->handleLogin($cached);
     }
 }

@@ -50,11 +50,7 @@ class LoginPacket extends PMLogin{
     }
 
     public function translateLogin($packet){
-        // $this->protocol =  Why did i do this?
-        $this->protocol = ProtocolInfo::CURRENT_PROTOCOL; // required to assign a temporary bypass through the server.
-        $this->clientData = $packet->clientData;
-        $this->clientData['SkinGeometry'] = $packet->clientData['SkinGeometryData'];
-
+        $this->protocol = ProtocolInfo::CURRENT_PROTOCOL;
         return $this;
     }
 }
