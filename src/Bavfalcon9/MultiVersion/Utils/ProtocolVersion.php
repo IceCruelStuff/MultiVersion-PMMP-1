@@ -25,7 +25,13 @@ class ProtocolVersion {
     public const DEVELOPER = false; // set to true for debug
     public const VERSIONS = [
         '1.12.0' => 361,
-        '1.13.0' => 388
+        '1.13.0' => 388,
+        '1.14.0' => 389
+    ];
+    public const VERSIONS_NAME = [
+        361 => '1.12.0',
+        388 => '1.13.0',
+        389 => '1.14.0'
     ];
 
     /** @var int */

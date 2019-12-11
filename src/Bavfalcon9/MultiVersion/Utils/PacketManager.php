@@ -111,7 +111,8 @@ class PacketManager {
                     $player->close('', '§c[MultiVersion]: Your game version is not yet supported here. [$protocol]');
                     $event->setCancelled();
                 } else {
-                    $this->plugin->getLogger()->debug("§e {$packet->username} joining with protocol: $protocol");
+                    $protoName = ProtocolVersion::VERSIONS_NAME[$protocol];
+                    $this->plugin->getLogger()->debug("§e {$packet->username} joining with protocol: $protocol ({$protoName})");
                     $this->versionPlayers[$packet->username] = $protocol;
                     $this->queue[$packet->username] = [];
                     array_push($this->queue[$packet->username], $nId);

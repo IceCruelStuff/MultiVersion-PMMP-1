@@ -109,6 +109,22 @@ class EventManager implements Listener {
             } else {
                 MainLogger::getLogger()->info("[MultiVersion]: §aLoaded support for: 1.12.x");
             }
+
+            // 1.14 support on MCPE 1.13 OFFICIAL BUILD
+            $newVersion = new ProtocolVersion(ProtocolVersion::VERSIONS["1.14.0"], "1.14.0", false);
+            $newVersion->setProtocolPackets([
+                "LoginPacket" => 0x01//,
+                //"StartGamePacket" => 0x0b,
+                //"RespawnPacket" => 0x2d,
+                //"PlayerListPacket" => 0x3f
+            ]);
+            $newVersion = $this->packetManager->registerProtocol($newVersion);
+            define("MULTIVERSION_v1_14_0", $this->plugin->getDataFolder()."v1_14_0");
+            if (!$newVersion) {
+                MainLogger::getLogger()->critical("[MULTIVERSION]: Failed to add version: 1.14.x");
+            } else {
+                MainLogger::getLogger()->info("[MultiVersion]: §aLoaded support for: 1.14.x");
+            }
         }
     }
 }
