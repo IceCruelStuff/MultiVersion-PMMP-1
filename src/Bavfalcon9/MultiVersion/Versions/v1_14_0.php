@@ -19,10 +19,7 @@ class v1_14_0 extends Version {
     public function onLoad(PacketManager $packetManager, $plugin): void {
         $newVersion = new ProtocolVersion(ProtocolVersion::VERSIONS["1.14.0"], "1.14.0", false);
         $newVersion->setProtocolPackets([
-            "LoginPacket" => 0x01//,
-            //"StartGamePacket" => 0x0b,
-            //"RespawnPacket" => 0x2d,
-            //"PlayerListPacket" => 0x3f
+            "LoginPacket" => 0x01
         ]);
         $packetManager->registerProtocol($newVersion);
         define("MULTIVERSION_v1_14_0", $plugin->getDataFolder()."v1_14_0");
