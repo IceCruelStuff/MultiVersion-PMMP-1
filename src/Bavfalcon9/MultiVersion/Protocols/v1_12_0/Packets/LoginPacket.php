@@ -162,7 +162,6 @@ class LoginPacket extends PMLogin{
     public function handle(NetworkSession $session) : bool{
         $cached = (!isset(self::$cache[$this->username])) ? $this : self::$cache[$this->username];
         if (isset(self::$cache[$this->username])) unset(self::$cache[$this->username]);
-        var_dump($cached);
         return $session->handleLogin($cached);
     }
 }
